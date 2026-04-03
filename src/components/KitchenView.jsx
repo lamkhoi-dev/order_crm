@@ -1,5 +1,5 @@
 import useStore from '../store/useStore';
-import { formatCurrency } from '../data/mockData';
+import { formatCurrency, STAFF_LIST, ORDER_TYPES } from '../data/mockData';
 import './KitchenView.css';
 
 export default function KitchenView() {
@@ -68,6 +68,13 @@ export default function KitchenView() {
                   <span className="kitchen-card__table">{order.tableName}</span>
                   <span className="kitchen-card__time">{getTimeSince(order.createdAt)}</span>
                 </div>
+                <div className="kitchen-card__meta">
+                  {order.guestCount > 0 && <span>👤 {order.guestCount}</span>}
+                  {order.staffId && <span>👨‍💼 {STAFF_LIST.find(s => s.id === order.staffId)?.name}</span>}
+                  {order.orderType && order.orderType !== 'dine_in' && (
+                    <span className="kitchen-card__type">{ORDER_TYPES.find(t => t.id === order.orderType)?.icon} {ORDER_TYPES.find(t => t.id === order.orderType)?.label}</span>
+                  )}
+                </div>
                 <div className="kitchen-card__items">
                   {order.items.map((item, i) => (
                     <div key={i} className="kitchen-card__item">
@@ -115,6 +122,10 @@ export default function KitchenView() {
                   <span className="kitchen-card__time kitchen-card__time--live">
                     ⏱ {getTimeSince(order.createdAt)}
                   </span>
+                </div>
+                <div className="kitchen-card__meta">
+                  {order.guestCount > 0 && <span>👤 {order.guestCount}</span>}
+                  {order.staffId && <span>👨‍💼 {STAFF_LIST.find(s => s.id === order.staffId)?.name}</span>}
                 </div>
                 <div className="kitchen-card__items">
                   {order.items.map((item, i) => (

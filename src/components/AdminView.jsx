@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import useStore from '../store/useStore';
-import { formatCurrency } from '../data/mockData';
+import { formatCurrency, STAFF_LIST, ORDER_TYPES } from '../data/mockData';
 import './AdminView.css';
 
 export default function AdminView() {
@@ -78,6 +78,31 @@ export default function AdminView() {
             <span className="kpi-card__sub">Giá trị trung bình</span>
           </div>
         </div>
+
+        <div className="kpi-card kpi-card--guests">
+          <div className="kpi-card__icon">👥</div>
+          <div className="kpi-card__content">
+            <span className="kpi-card__label">Tổng khách</span>
+            <span className="kpi-card__value">{stats.totalGuests || 0}</span>
+            <span className="kpi-card__sub">
+              {stats.paidOrders > 0 ? `TB ${Math.round(stats.totalGuests / stats.paidOrders)} khách/đơn` : 'Chưa có dữ liệu'}
+            </span>
+          </div>
+        </div>
+
+        <div className="kpi-card kpi-card--types">
+          <div className="kpi-card__icon">📋</div>
+          <div className="kpi-card__content">
+            <span className="kpi-card__label">Loại đơn</span>
+            <div className="kpi-card__types">
+              {ORDER_TYPES.map(t => (
+                <span key={t.id} className="kpi-card__type-item">
+                  {t.icon} {stats.ordersByType?.[t.id] || 0}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Top Items Chart */}
@@ -143,6 +168,13 @@ export default function AdminView() {
                       {item.image} ×{item.quantity}
                     </span>
                   ))}
+                </div>
+                <div className="order-row__extra">
+                  {order.guestCount > 0 && <span>👤 {order.guestCount}</span>}
+                  {order.staffId && <span>👨‍💼 {STAFF_LIST.find(s => s.id === order.staffId)?.name}</span>}
+                  {order.orderType && order.orderType !== 'dine_in' && (
+                    <span>{ORDER_TYPES.find(t => t.id === order.orderType)?.icon} {ORDER_TYPES.find(t => t.id === order.orderType)?.label}</span>
+                  )}
                 </div>
                 <div className="order-row__meta">
                   <span className="order-row__total">{formatCurrency(order.total)}</span>
