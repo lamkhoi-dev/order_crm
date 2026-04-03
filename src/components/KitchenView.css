@@ -67,7 +67,7 @@
 .kitchen-col__header--cooking { background: var(--color-primary-light); color: var(--color-primary); }
 .kitchen-col__header--done    { background: var(--color-accent-light); color: var(--color-accent); }
 
-.kitchen-col__icon { font-size: var(--text-md); }
+.kitchen-col__icon { flex-shrink: 0; }
 .kitchen-col__title { flex: 1; }
 
 .kitchen-col__count {
@@ -101,7 +101,7 @@
   font-size: var(--text-sm);
 }
 
-.kitchen-empty span { font-size: var(--text-2xl); opacity: 0.5; }
+.kitchen-empty svg { opacity: 0.4; }
 
 /* --- Kitchen Card --- */
 .kitchen-card {

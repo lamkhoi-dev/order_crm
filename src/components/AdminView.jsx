@@ -1,6 +1,11 @@
 import { useMemo } from 'react';
 import useStore from '../store/useStore';
 import { formatCurrency, STAFF_LIST, ORDER_TYPES } from '../data/mockData';
+import {
+  LayoutDashboard, Trash2, CircleDollarSign, Package, Armchair,
+  TrendingUp, Users, ClipboardList, Trophy, Timer, Flame,
+  CircleCheck, Banknote, UserRound, BarChart3
+} from 'lucide-react';
 import './AdminView.css';
 
 export default function AdminView() {
@@ -21,25 +26,24 @@ export default function AdminView() {
     }
   };
 
-  // Simple bar chart for top items
   const maxCount = Math.max(...stats.topItems.map(i => i.count), 1);
 
   return (
     <div className="admin-view" id="admin-view">
       <div className="admin-view__header">
         <div>
-          <h2 className="section-title">📊 Dashboard</h2>
+          <h2 className="section-title"><LayoutDashboard size={20} /> Dashboard</h2>
           <span className="admin-view__subtitle">Tổng quan hoạt động nhà hàng</span>
         </div>
         <button className="btn btn--danger btn--sm" id="btn-reset" onClick={handleReset}>
-          🗑️ Reset dữ liệu
+          <Trash2 size={14} /> Reset dữ liệu
         </button>
       </div>
 
       {/* KPI Cards */}
       <div className="kpi-grid" id="kpi-grid">
         <div className="kpi-card kpi-card--revenue">
-          <div className="kpi-card__icon">💰</div>
+          <div className="kpi-card__icon"><CircleDollarSign size={22} /></div>
           <div className="kpi-card__content">
             <span className="kpi-card__label">Doanh thu</span>
             <span className="kpi-card__value">{formatCurrency(stats.totalRevenue)}</span>
@@ -48,7 +52,7 @@ export default function AdminView() {
         </div>
 
         <div className="kpi-card kpi-card--orders">
-          <div className="kpi-card__icon">📦</div>
+          <div className="kpi-card__icon"><Package size={22} /></div>
           <div className="kpi-card__content">
             <span className="kpi-card__label">Tổng đơn hàng</span>
             <span className="kpi-card__value">{stats.totalOrders}</span>
@@ -57,7 +61,7 @@ export default function AdminView() {
         </div>
 
         <div className="kpi-card kpi-card--tables">
-          <div className="kpi-card__icon">🪑</div>
+          <div className="kpi-card__icon"><Armchair size={22} /></div>
           <div className="kpi-card__content">
             <span className="kpi-card__label">Bàn đang phục vụ</span>
             <span className="kpi-card__value">{activeTables}/{tables.length}</span>
@@ -66,7 +70,7 @@ export default function AdminView() {
         </div>
 
         <div className="kpi-card kpi-card--avg">
-          <div className="kpi-card__icon">📈</div>
+          <div className="kpi-card__icon"><TrendingUp size={22} /></div>
           <div className="kpi-card__content">
             <span className="kpi-card__label">TB / Đơn</span>
             <span className="kpi-card__value">
@@ -80,7 +84,7 @@ export default function AdminView() {
         </div>
 
         <div className="kpi-card kpi-card--guests">
-          <div className="kpi-card__icon">👥</div>
+          <div className="kpi-card__icon"><Users size={22} /></div>
           <div className="kpi-card__content">
             <span className="kpi-card__label">Tổng khách</span>
             <span className="kpi-card__value">{stats.totalGuests || 0}</span>
@@ -91,13 +95,13 @@ export default function AdminView() {
         </div>
 
         <div className="kpi-card kpi-card--types">
-          <div className="kpi-card__icon">📋</div>
+          <div className="kpi-card__icon"><ClipboardList size={22} /></div>
           <div className="kpi-card__content">
             <span className="kpi-card__label">Loại đơn</span>
             <div className="kpi-card__types">
               {ORDER_TYPES.map(t => (
                 <span key={t.id} className="kpi-card__type-item">
-                  {t.icon} {stats.ordersByType?.[t.id] || 0}
+                  {t.label} {stats.ordersByType?.[t.id] || 0}
                 </span>
               ))}
             </div>
@@ -107,10 +111,10 @@ export default function AdminView() {
 
       {/* Top Items Chart */}
       <div className="admin-section" id="top-items-section">
-        <h3 className="admin-section__title">🏆 Món bán chạy</h3>
+        <h3 className="admin-section__title"><Trophy size={16} /> Món bán chạy</h3>
         {stats.topItems.length === 0 ? (
           <div className="admin-empty">
-            <span>📊</span>
+            <BarChart3 size={32} strokeWidth={1.5} />
             <p>Chưa có dữ liệu</p>
           </div>
         ) : (
@@ -140,10 +144,10 @@ export default function AdminView() {
 
       {/* Order History */}
       <div className="admin-section" id="order-history-section">
-        <h3 className="admin-section__title">📋 Lịch sử đơn hàng</h3>
+        <h3 className="admin-section__title"><ClipboardList size={16} /> Lịch sử đơn hàng</h3>
         {orders.length === 0 ? (
           <div className="admin-empty">
-            <span>📋</span>
+            <ClipboardList size={32} strokeWidth={1.5} />
             <p>Chưa có đơn hàng nào</p>
           </div>
         ) : (
@@ -152,10 +156,10 @@ export default function AdminView() {
               <div key={order.id} className="order-row" id={`order-row-${order.id}`}>
                 <div className="order-row__main">
                   <span className={`order-row__status order-row__status--${order.status}`}>
-                    {order.status === 'pending' && '⏳'}
-                    {order.status === 'cooking' && '🔥'}
-                    {order.status === 'done' && '✅'}
-                    {order.status === 'paid' && '💰'}
+                    {order.status === 'pending' && <Timer size={16} />}
+                    {order.status === 'cooking' && <Flame size={16} />}
+                    {order.status === 'done' && <CircleCheck size={16} />}
+                    {order.status === 'paid' && <Banknote size={16} />}
                   </span>
                   <div className="order-row__info">
                     <span className="order-row__id">{order.id}</span>
@@ -165,15 +169,15 @@ export default function AdminView() {
                 <div className="order-row__items">
                   {order.items.map((item, i) => (
                     <span key={i} className="order-row__item-tag">
-                      {item.image} ×{item.quantity}
+                      {item.name} ×{item.quantity}
                     </span>
                   ))}
                 </div>
                 <div className="order-row__extra">
-                  {order.guestCount > 0 && <span>👤 {order.guestCount}</span>}
-                  {order.staffId && <span>👨‍💼 {STAFF_LIST.find(s => s.id === order.staffId)?.name}</span>}
+                  {order.guestCount > 0 && <span><Users size={11} /> {order.guestCount}</span>}
+                  {order.staffId && <span><UserRound size={11} /> {STAFF_LIST.find(s => s.id === order.staffId)?.name}</span>}
                   {order.orderType && order.orderType !== 'dine_in' && (
-                    <span>{ORDER_TYPES.find(t => t.id === order.orderType)?.icon} {ORDER_TYPES.find(t => t.id === order.orderType)?.label}</span>
+                    <span>{ORDER_TYPES.find(t => t.id === order.orderType)?.label}</span>
                   )}
                 </div>
                 <div className="order-row__meta">

@@ -19,10 +19,9 @@
   min-width: 0;
 }
 
-.header__logo {
-  font-size: var(--text-xl);
-  display: flex;
-  align-items: center;
+.header__logo-icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .header__title {
@@ -76,7 +75,7 @@
 }
 
 .header__role-icon {
-  font-size: var(--text-base);
+  flex-shrink: 0;
 }
 
 .header__role-label {

@@ -1,13 +1,13 @@
 // Mock data for OrderFlow restaurant system
 
 export const MENU_CATEGORIES = [
-  { id: 'popular', name: 'Hay Dùng', icon: '❤️' },
-  { id: 'appetizer', name: 'Khai Vị', icon: '🥗' },
-  { id: 'main', name: 'Món Chính', icon: '🍖' },
-  { id: 'noodle', name: 'Mì & Phở', icon: '🍜' },
-  { id: 'seafood', name: 'Hải Sản', icon: '🦐' },
-  { id: 'drink', name: 'Đồ Uống', icon: '🥤' },
-  { id: 'dessert', name: 'Tráng Miệng', icon: '🍰' },
+  { id: 'popular', name: 'Hay Dùng' },
+  { id: 'appetizer', name: 'Khai Vị' },
+  { id: 'main', name: 'Món Chính' },
+  { id: 'noodle', name: 'Mì & Phở' },
+  { id: 'seafood', name: 'Hải Sản' },
+  { id: 'drink', name: 'Đồ Uống' },
+  { id: 'dessert', name: 'Tráng Miệng' },
 ];
 
 export const MENU_ITEMS = [
@@ -62,10 +62,10 @@ export const STAFF_LIST = [
 
 // Order type tabs
 export const ORDER_TYPES = [
-  { id: 'dine_in',     label: 'Tại bàn',      icon: '🪑' },
-  { id: 'takeaway',    label: 'Mang về',       icon: '🥡' },
-  { id: 'delivery',    label: 'Giao hàng',     icon: '🛵' },
-  { id: 'reservation', label: 'Đặt trước',     icon: '📅' },
+  { id: 'dine_in',     label: 'Tại bàn' },
+  { id: 'takeaway',    label: 'Mang về' },
+  { id: 'delivery',    label: 'Giao hàng' },
+  { id: 'reservation', label: 'Đặt trước' },
 ];
 
 // Table areas
@@ -87,9 +87,9 @@ export const INITIAL_TABLES = Array.from({ length: 12 }, (_, i) => ({
 
 export const TABLE_STATUS_CONFIG = {
   empty:    { label: 'Trống',     color: 'empty',    icon: '○' },
-  ordering: { label: 'Đang gọi', color: 'ordering', icon: '📝' },
-  waiting:  { label: 'Chờ món',  color: 'waiting',  icon: '⏳' },
-  served:   { label: 'Đã ra',    color: 'served',   icon: '✅' },
+  ordering: { label: 'Đang gọi', color: 'ordering', icon: '●' },
+  waiting:  { label: 'Chờ món',  color: 'waiting',  icon: '●' },
+  served:   { label: 'Đã ra',    color: 'served',   icon: '●' },
 };
 
 export function formatCurrency(amount) {

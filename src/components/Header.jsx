@@ -1,10 +1,11 @@
 import useStore from '../store/useStore';
+import { Utensils, ChefHat, BarChart3 } from 'lucide-react';
 import './Header.css';
 
 const ROLES = [
-  { id: 'order',   label: 'Order',   icon: '🛎️', desc: 'Phục vụ' },
-  { id: 'kitchen', label: 'Bếp',     icon: '👨‍🍳', desc: 'Nhà bếp' },
-  { id: 'admin',   label: 'Admin',   icon: '📊', desc: 'Quản lý' },
+  { id: 'order',   label: 'Order',   Icon: Utensils, desc: 'Phục vụ' },
+  { id: 'kitchen', label: 'Bếp',     Icon: ChefHat,  desc: 'Nhà bếp' },
+  { id: 'admin',   label: 'Admin',   Icon: BarChart3, desc: 'Quản lý' },
 ];
 
 export default function Header() {
@@ -18,7 +19,7 @@ export default function Header() {
   return (
     <header className="header" id="main-header">
       <div className="header__brand">
-        <span className="header__logo">🍽️</span>
+        <Utensils size={22} className="header__logo-icon" />
         <div>
           <h1 className="header__title">OrderFlow</h1>
           <span className="header__subtitle">Restaurant POS</span>
@@ -33,7 +34,7 @@ export default function Header() {
             className={`header__role-btn ${role === r.id ? 'header__role-btn--active' : ''}`}
             onClick={() => setRole(r.id)}
           >
-            <span className="header__role-icon">{r.icon}</span>
+            <r.Icon size={16} className="header__role-icon" />
             <span className="header__role-label">{r.label}</span>
             {r.id === 'kitchen' && pendingKitchen > 0 && (
               <span className="header__badge header__badge--warning">{pendingKitchen}</span>

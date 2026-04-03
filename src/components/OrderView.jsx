@@ -1,6 +1,12 @@
 import { useState, useMemo } from 'react';
 import useStore from '../store/useStore';
 import { MENU_ITEMS, MENU_CATEGORIES, TABLE_STATUS_CONFIG, STAFF_LIST, ORDER_TYPES, TABLE_AREAS, formatCurrency } from '../data/mockData';
+import {
+  LayoutGrid, ClipboardList, UserRound, Search, X, Minus, Plus, Trash2,
+  ShoppingCart, Send, Save, CircleDollarSign, Banknote, Clock, PencilLine,
+  Users, ChevronDown, CircleCheck, Flame, Timer, PlusCircle, Utensils,
+  ArrowUpFromLine
+} from 'lucide-react';
 import './OrderView.css';
 
 export default function OrderView() {
@@ -42,30 +48,23 @@ export default function OrderView() {
     ? orders.find(o => o.id === selectedTable.orderId)
     : null;
 
-  // Is current table in "waiting" state? Allow adding more items
   const canAddMore = selectedTable && selectedTable.status === 'waiting' && tableOrder;
 
-  // Filter menu items
   const filteredItems = useMemo(() => {
     let items = MENU_ITEMS;
-
-    // Category filter
     if (activeCategory === 'popular') {
       items = items.filter(m => m.popular);
     } else if (activeCategory !== 'all') {
       items = items.filter(m => m.category === activeCategory);
     }
-
-    // Search filter
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      items = items.filter(m => m.name.toLowerCase().includes(q));
+      const normalize = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
+      const q = normalize(searchQuery.trim());
+      items = items.filter(m => normalize(m.name).includes(q));
     }
-
     return items;
   }, [activeCategory, searchQuery]);
 
-  // Filter tables by area
   const filteredTables = useMemo(() => {
     if (tableAreaFilter === 'all') return tables;
     return tables.filter(t => t.area === tableAreaFilter);
@@ -74,7 +73,6 @@ export default function OrderView() {
   const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
   const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
 
-  // Order list counts by type
   const orderCounts = useMemo(() => {
     const active = orders.filter(o => o.status !== 'paid');
     const counts = { all: active.length };
@@ -86,72 +84,39 @@ export default function OrderView() {
   }, [orders, drafts]);
 
   const handleSendOrder = () => {
-    if (!selectedTableId) {
-      addToast('Vui lòng chọn bàn trước!', 'warning');
-      return;
-    }
-    if (!cart.length) {
-      addToast('Vui lòng chọn món!', 'warning');
-      return;
-    }
-
-    // If adding to existing order
+    if (!selectedTableId) { addToast('Vui lòng chọn bàn trước!', 'warning'); return; }
+    if (!cart.length) { addToast('Vui lòng chọn món!', 'warning'); return; }
     if (canAddMore && tableOrder) {
       const ok = addItemsToOrder(tableOrder.id);
-      if (ok) {
-        addToast(`Đã thêm món vào đơn ${tableOrder.id}!`, 'success');
-        setShowCart(false);
-      }
+      if (ok) { addToast(`Đã thêm món vào đơn ${tableOrder.id}!`, 'success'); setShowCart(false); }
       return;
     }
-
     const orderId = sendOrderToKitchen();
-    if (orderId) {
-      addToast(`Đã gửi đơn ${orderId} cho bếp!`, 'success');
-      setShowCart(false);
-    }
+    if (orderId) { addToast(`Đã gửi đơn ${orderId} cho bếp!`, 'success'); setShowCart(false); }
   };
 
   const handleSaveDraft = () => {
-    if (!selectedTableId) {
-      addToast('Vui lòng chọn bàn trước!', 'warning');
-      return;
-    }
-    if (!cart.length) {
-      addToast('Vui lòng chọn món!', 'warning');
-      return;
-    }
+    if (!selectedTableId) { addToast('Vui lòng chọn bàn trước!', 'warning'); return; }
+    if (!cart.length) { addToast('Vui lòng chọn món!', 'warning'); return; }
     const draftId = saveDraft();
-    if (draftId) {
-      addToast('Đã tạm lưu đơn hàng!', 'info');
-      setShowCart(false);
-    }
+    if (draftId) { addToast('Đã tạm lưu đơn hàng!', 'info'); setShowCart(false); }
   };
 
   const handlePay = (orderId) => {
     payOrder(orderId);
-    addToast('Thanh toán thành công! 🎉', 'success');
+    addToast('Thanh toán thành công!', 'success');
     setShowPayment(false);
   };
 
   const handleAddToCart = (itemId) => {
-    if (!selectedTableId) {
-      addToast('Chọn bàn trước!', 'warning');
-      return;
-    }
-    if (selectedTable?.status === 'served') {
-      addToast('Bàn này đã ra món, vui lòng thanh toán!', 'warning');
-      return;
-    }
+    if (!selectedTableId) { addToast('Chọn bàn trước!', 'warning'); return; }
+    if (selectedTable?.status === 'served') { addToast('Bàn này đã ra món, vui lòng thanh toán!', 'warning'); return; }
     addToCart(itemId);
   };
 
   const canOrder = selectedTableId && selectedTable?.status !== 'served';
-
-  // Served orders notification
   const servedOrders = orders.filter(o => o.status === 'done');
 
-  // Active orders (for order list)
   const activeOrders = useMemo(() => {
     let result = orders.filter(o => o.status !== 'paid');
     if (orderTab !== 'all') {
@@ -174,20 +139,19 @@ export default function OrderView() {
             className={`topbar-btn ${!showOrderList ? 'topbar-btn--active' : ''}`}
             onClick={() => setShowOrderList(false)}
           >
-            🪑 Sơ đồ bàn
+            <LayoutGrid size={15} /> Sơ đồ bàn
           </button>
           <button
             className={`topbar-btn ${showOrderList ? 'topbar-btn--active' : ''}`}
             onClick={() => setShowOrderList(true)}
           >
-            📋 Đơn hàng
+            <ClipboardList size={15} /> Đơn hàng
             {orderCounts.all > 0 && <span className="topbar-btn__badge">{orderCounts.all}</span>}
           </button>
         </div>
         <div className="order-topbar__right">
-          {/* Staff Selector */}
           <div className="staff-select" id="staff-select">
-            <span className="staff-select__icon">👨‍💼</span>
+            <UserRound size={15} className="staff-select__icon" />
             <select
               className="staff-select__dropdown"
               value={selectedStaffId || ''}
@@ -205,7 +169,6 @@ export default function OrderView() {
       {/* ========== ORDER LIST VIEW ========== */}
       {showOrderList ? (
         <section className="order-list-view" id="order-list-view">
-          {/* Order Type Tabs */}
           <div className="order-type-tabs" id="order-type-tabs">
             <button
               className={`order-type-tab ${orderTab === 'all' ? 'order-type-tab--active' : ''}`}
@@ -219,23 +182,22 @@ export default function OrderView() {
                 className={`order-type-tab ${orderTab === t.id ? 'order-type-tab--active' : ''}`}
                 onClick={() => setOrderTab(t.id)}
               >
-                {t.icon} {t.label} ({orderCounts[t.id] || 0})
+                {t.label} ({orderCounts[t.id] || 0})
               </button>
             ))}
             <button
               className={`order-type-tab order-type-tab--draft ${orderTab === 'draft' ? 'order-type-tab--active' : ''}`}
               onClick={() => setOrderTab('draft')}
             >
-              💾 Tạm lưu ({drafts.length})
+              <Save size={13} /> Tạm lưu ({drafts.length})
             </button>
           </div>
 
-          {/* Order Cards */}
           <div className="order-cards" id="order-cards">
             {orderTab === 'draft' ? (
               drafts.length === 0 ? (
                 <div className="order-list-empty">
-                  <span>💾</span>
+                  <Save size={32} strokeWidth={1.5} />
                   <p>Không có đơn tạm lưu</p>
                 </div>
               ) : (
@@ -243,11 +205,11 @@ export default function OrderView() {
                   <div key={draft.id} className="order-card order-card--draft" id={`draft-${draft.id}`}>
                     <div className="order-card__head">
                       <span className="order-card__table">{draft.tableName}</span>
-                      <span className="order-card__type">💾 Tạm lưu</span>
+                      <span className="order-card__type"><Save size={12} /> Tạm lưu</span>
                     </div>
                     <div className="order-card__items-preview">
                       {draft.items.slice(0, 3).map((item, i) => (
-                        <span key={i}>{item.image} {item.name} ×{item.quantity}</span>
+                        <span key={i}>{item.name} ×{item.quantity}</span>
                       ))}
                       {draft.items.length > 3 && <span>+{draft.items.length - 3} món khác</span>}
                     </div>
@@ -267,7 +229,7 @@ export default function OrderView() {
               )
             ) : activeOrders.length === 0 ? (
               <div className="order-list-empty">
-                <span>📋</span>
+                <ClipboardList size={32} strokeWidth={1.5} />
                 <p>Không có đơn hàng</p>
               </div>
             ) : (
@@ -279,21 +241,21 @@ export default function OrderView() {
                       <span className="order-card__id">{order.id}</span>
                     </div>
                     <span className={`order-card__status order-card__status--${order.status}`}>
-                      {order.status === 'pending' && '⏳ Chờ bếp'}
-                      {order.status === 'cooking' && '🔥 Đang nấu'}
-                      {order.status === 'done' && '✅ Đã ra'}
+                      {order.status === 'pending' && <><Timer size={12} /> Chờ bếp</>}
+                      {order.status === 'cooking' && <><Flame size={12} /> Đang nấu</>}
+                      {order.status === 'done' && <><CircleCheck size={12} /> Đã ra</>}
                     </span>
                   </div>
                   {order.guestCount > 0 && (
-                    <span className="order-card__guests">👤 {order.guestCount} khách</span>
+                    <span className="order-card__guests"><Users size={12} /> {order.guestCount} khách</span>
                   )}
                   <div className="order-card__items-preview">
                     {order.items.map((item, i) => (
-                      <span key={i}>{item.image} ×{item.quantity}</span>
+                      <span key={i}>{item.name} ×{item.quantity}</span>
                     ))}
                   </div>
                   {order.note && (
-                    <div className="order-card__note">📝 {order.note}</div>
+                    <div className="order-card__note"><PencilLine size={12} /> {order.note}</div>
                   )}
                   <div className="order-card__footer">
                     <span className="order-card__total">{formatCurrency(order.total)}</span>
@@ -314,7 +276,7 @@ export default function OrderView() {
                         selectTable(order.tableId);
                         setShowOrderList(false);
                       }}>
-                        + Thêm món
+                        <Plus size={12} /> Thêm món
                       </button>
                     )}
                   </div>
@@ -330,7 +292,6 @@ export default function OrderView() {
             <div className="section-header">
               <h2 className="section-title">Sơ đồ bàn</h2>
               <div className="section-header__right">
-                {/* Area filter */}
                 <div className="area-filter">
                   <button
                     className={`area-btn ${tableAreaFilter === 'all' ? 'area-btn--active' : ''}`}
@@ -377,7 +338,7 @@ export default function OrderView() {
                     <div className="table-card__meta">
                       <span className="table-card__seats">{t.seats} ghế</span>
                       {t.guestCount > 0 && (
-                        <span className="table-card__guests">👤 {t.guestCount}</span>
+                        <span className="table-card__guests"><Users size={11} /> {t.guestCount}</span>
                       )}
                     </div>
                     <span className={`table-card__status table-card__status--${cfg.color}`}>
@@ -387,14 +348,14 @@ export default function OrderView() {
                       <span className="table-card__total">{formatCurrency(tOrder.total)}</span>
                     )}
                     {tDraft && !tOrder && (
-                      <span className="table-card__draft-badge">💾 Tạm lưu</span>
+                      <span className="table-card__draft-badge"><Save size={10} /> Tạm lưu</span>
                     )}
                   </button>
                 );
               })}
             </div>
 
-            {/* Guest count for selected table */}
+            {/* Guest count bar */}
             {selectedTable && selectedTable.status !== 'served' && (
               <div className="guest-count-bar" id="guest-count-bar">
                 <div className="guest-count-bar__info">
@@ -404,14 +365,13 @@ export default function OrderView() {
                   </span>
                 </div>
                 <div className="guest-count-bar__input">
-                  <label>👤 Số khách:</label>
+                  <label><Users size={14} /> Số khách:</label>
                   <div className="guest-count-controls">
-                    <button className="qty-btn" onClick={() => setGuestCount(selectedTable.id, selectedTable.guestCount - 1)}>−</button>
+                    <button className="qty-btn" onClick={() => setGuestCount(selectedTable.id, selectedTable.guestCount - 1)}><Minus size={14} /></button>
                     <span className="qty-value">{selectedTable.guestCount}</span>
-                    <button className="qty-btn" onClick={() => setGuestCount(selectedTable.id, selectedTable.guestCount + 1)}>+</button>
+                    <button className="qty-btn" onClick={() => setGuestCount(selectedTable.id, selectedTable.guestCount + 1)}><Plus size={14} /></button>
                   </div>
                 </div>
-                {/* Order Type selector */}
                 <div className="guest-count-bar__type">
                   <select
                     className="order-type-select"
@@ -419,7 +379,7 @@ export default function OrderView() {
                     onChange={e => setOrderType(e.target.value)}
                   >
                     {ORDER_TYPES.map(t => (
-                      <option key={t.id} value={t.id}>{t.icon} {t.label}</option>
+                      <option key={t.id} value={t.id}>{t.label}</option>
                     ))}
                   </select>
                 </div>
@@ -432,14 +392,14 @@ export default function OrderView() {
             <div className="modal-overlay" onClick={() => setShowPayment(false)}>
               <div className="payment-modal" onClick={e => e.stopPropagation()}>
                 <div className="payment-modal__header">
-                  <h3>💰 Thanh toán - {selectedTable.name}</h3>
-                  <button className="modal-close" onClick={() => setShowPayment(false)}>✕</button>
+                  <h3><CircleDollarSign size={18} /> Thanh toán - {selectedTable.name}</h3>
+                  <button className="modal-close" onClick={() => setShowPayment(false)}><X size={16} /></button>
                 </div>
                 <div className="payment-modal__body">
                   <div className="payment-meta">
-                    <span>👤 {tableOrder.guestCount || 0} khách</span>
-                    <span>🕐 {new Date(tableOrder.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
-                    {tableOrder.staffId && <span>👨‍💼 {staffName(tableOrder.staffId)}</span>}
+                    <span><Users size={13} /> {tableOrder.guestCount || 0} khách</span>
+                    <span><Clock size={13} /> {new Date(tableOrder.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                    {tableOrder.staffId && <span><UserRound size={13} /> {staffName(tableOrder.staffId)}</span>}
                   </div>
                   <div className="payment-items">
                     <div className="payment-items__header">
@@ -449,7 +409,7 @@ export default function OrderView() {
                     </div>
                     {tableOrder.items.map((item, i) => (
                       <div key={i} className="payment-item">
-                        <span className="payment-item__name">{item.image} {item.name}</span>
+                        <span className="payment-item__name">{item.name}</span>
                         <span className="payment-item__qty">{item.quantity}</span>
                         <span className="payment-item__price">{formatCurrency(item.price * item.quantity)}</span>
                       </div>
@@ -463,7 +423,7 @@ export default function OrderView() {
                 <div className="payment-modal__actions">
                   <button className="btn btn--secondary" onClick={() => setShowPayment(false)}>Huỷ bỏ</button>
                   <button className="btn btn--primary btn--lg" id="btn-pay" onClick={() => handlePay(tableOrder.id)}>
-                    💵 Thanh toán tiền mặt
+                    <Banknote size={18} /> Thanh toán tiền mặt
                   </button>
                 </div>
               </div>
@@ -475,17 +435,17 @@ export default function OrderView() {
             <div className="section-header">
               <h2 className="section-title">
                 {canAddMore
-                  ? `➕ Thêm món - ${selectedTable.name}`
+                  ? <><PlusCircle size={18} /> Thêm món - {selectedTable.name}</>
                   : selectedTable
-                    ? `🍽️ Gọi món - ${selectedTable.name}`
-                    : '🍽️ Chọn bàn để gọi món'
+                    ? <><Utensils size={18} /> Gọi món - {selectedTable.name}</>
+                    : <><Utensils size={18} /> Chọn bàn để gọi món</>
                 }
               </h2>
             </div>
 
             {/* Search Bar */}
             <div className="menu-search" id="menu-search">
-              <span className="menu-search__icon">🔍</span>
+              <Search size={16} className="menu-search__icon" />
               <input
                 type="text"
                 className="menu-search__input"
@@ -495,7 +455,7 @@ export default function OrderView() {
                 id="menu-search-input"
               />
               {searchQuery && (
-                <button className="menu-search__clear" onClick={() => setSearchQuery('')}>✕</button>
+                <button className="menu-search__clear" onClick={() => setSearchQuery('')}><X size={14} /></button>
               )}
             </div>
 
@@ -505,7 +465,7 @@ export default function OrderView() {
                 className={`category-tab ${activeCategory === 'all' ? 'category-tab--active' : ''}`}
                 onClick={() => setActiveCategory('all')}
               >
-                🔥 Tất cả
+                <Flame size={13} /> Tất cả
               </button>
               {MENU_CATEGORIES.map(cat => (
                 <button
@@ -513,7 +473,7 @@ export default function OrderView() {
                   className={`category-tab ${activeCategory === cat.id ? 'category-tab--active' : ''}`}
                   onClick={() => setActiveCategory(cat.id)}
                 >
-                  {cat.icon} {cat.name}
+                  {cat.name}
                 </button>
               ))}
             </div>
@@ -522,7 +482,7 @@ export default function OrderView() {
             <div className="menu-grid" id="menu-grid">
               {filteredItems.length === 0 && (
                 <div className="menu-empty">
-                  <span>🔍</span>
+                  <Search size={32} strokeWidth={1.5} />
                   <p>Không tìm thấy món &quot;{searchQuery}&quot;</p>
                 </div>
               )}
@@ -554,7 +514,7 @@ export default function OrderView() {
       {/* Floating Cart Button (Mobile) */}
       {cartCount > 0 && (
         <button className="fab-cart" id="fab-cart" onClick={() => setShowCart(true)}>
-          <span className="fab-cart__icon">🛒</span>
+          <ShoppingCart size={18} />
           <span className="fab-cart__count">{cartCount}</span>
           <span className="fab-cart__total">{formatCurrency(cartTotal)}</span>
         </button>
@@ -565,29 +525,32 @@ export default function OrderView() {
         <aside className={`cart-panel ${showCart ? 'cart-panel--open' : ''}`} id="cart-panel">
           <div className="cart-panel__header">
             <h3>
-              {canAddMore ? `➕ Thêm món - ${selectedTable?.name}` : `🛒 Đơn hàng (${cartCount})`}
+              {canAddMore
+                ? <><PlusCircle size={16} /> Thêm món - {selectedTable?.name}</>
+                : <><ShoppingCart size={16} /> Đơn hàng ({cartCount})</>
+              }
             </h3>
-            <button className="modal-close cart-panel__close-mobile" onClick={() => setShowCart(false)}>✕</button>
+            <button className="modal-close cart-panel__close-mobile" onClick={() => setShowCart(false)}>
+              <X size={16} />
+            </button>
           </div>
 
-          {/* Table info in cart */}
           {selectedTable && (
             <div className="cart-table-info">
               <span>{selectedTable.name}</span>
-              <span>👤 {selectedTable.guestCount}</span>
-              {selectedStaffId && <span>👨‍💼 {staffName(selectedStaffId)}</span>}
+              <span><Users size={12} /> {selectedTable.guestCount}</span>
+              {selectedStaffId && <span><UserRound size={12} /> {staffName(selectedStaffId)}</span>}
             </div>
           )}
 
           {cart.length === 0 ? (
             <div className="cart-empty">
-              <span className="cart-empty__icon">🍽️</span>
+              <Utensils size={32} strokeWidth={1.5} className="cart-empty__icon" />
               <p>Chưa có món nào</p>
               <p className="cart-empty__hint">Chọn món từ thực đơn bên trái</p>
             </div>
           ) : (
             <>
-              {/* Cart Items Table */}
               <div className="cart-items-header">
                 <span className="cart-items-header__name">Tên món</span>
                 <span className="cart-items-header__qty">SL</span>
@@ -605,12 +568,14 @@ export default function OrderView() {
                       </div>
                     </div>
                     <div className="cart-item__qty-controls">
-                      <button className="qty-btn" onClick={() => updateCartQty(c.itemId, -1)}>−</button>
+                      <button className="qty-btn" onClick={() => updateCartQty(c.itemId, -1)}><Minus size={14} /></button>
                       <span className="qty-value">{c.quantity}</span>
-                      <button className="qty-btn" onClick={() => updateCartQty(c.itemId, +1)}>+</button>
+                      <button className="qty-btn" onClick={() => updateCartQty(c.itemId, +1)}><Plus size={14} /></button>
                     </div>
                     <span className="cart-item__subtotal">{formatCurrency(c.price * c.quantity)}</span>
-                    <button className="cart-item__remove" onClick={() => removeFromCart(c.itemId)}>🗑️</button>
+                    <button className="cart-item__remove" onClick={() => removeFromCart(c.itemId)}>
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -633,13 +598,13 @@ export default function OrderView() {
                 </div>
                 <div className="cart-footer__buttons">
                   <button className="btn btn--secondary btn--sm" onClick={() => clearCart()}>
-                    ✕ Huỷ bỏ
+                    <X size={13} /> Huỷ bỏ
                   </button>
                   <button className="btn btn--outline btn--sm" onClick={handleSaveDraft}>
-                    💾 Tạm lưu
+                    <Save size={13} /> Tạm lưu
                   </button>
                   <button className="btn btn--primary btn--lg btn--full" id="btn-send-kitchen" onClick={handleSendOrder}>
-                    📤 {canAddMore ? 'Gửi thêm cho bếp' : 'Gửi cho bếp'}
+                    <ArrowUpFromLine size={16} /> {canAddMore ? 'Gửi thêm cho bếp' : 'Gửi cho bếp'}
                   </button>
                 </div>
               </div>
@@ -653,7 +618,7 @@ export default function OrderView() {
         <div className="served-bar" id="served-bar">
           {servedOrders.map(o => (
             <div key={o.id} className="served-bar__item">
-              <span>✅ {o.tableName} đã ra món!</span>
+              <span><CircleCheck size={14} /> {o.tableName} đã ra món!</span>
               <button className="btn btn--accent btn--sm" onClick={() => {
                 selectTable(o.tableId);
                 setShowPayment(true);

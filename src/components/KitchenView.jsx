@@ -1,5 +1,9 @@
 import useStore from '../store/useStore';
 import { formatCurrency, STAFF_LIST, ORDER_TYPES } from '../data/mockData';
+import {
+  ChefHat, ClipboardList, Flame, Timer, CircleCheck, Users,
+  UserRound, PencilLine, Banknote
+} from 'lucide-react';
 import './KitchenView.css';
 
 export default function KitchenView() {
@@ -20,7 +24,7 @@ export default function KitchenView() {
 
   const handleComplete = (orderId, tableName) => {
     completeOrder(orderId);
-    addToast(`${tableName} đã ra món! 🎉`, 'success');
+    addToast(`${tableName} đã ra món!`, 'success');
   };
 
   const getTimeSince = (isoStr) => {
@@ -34,7 +38,7 @@ export default function KitchenView() {
   return (
     <div className="kitchen-view" id="kitchen-view">
       <div className="kitchen-view__header">
-        <h2 className="section-title">👨‍🍳 Bếp</h2>
+        <h2 className="section-title"><ChefHat size={20} /> Bếp</h2>
         <div className="kitchen-stats">
           <span className="kitchen-stat kitchen-stat--pending">
             <span className="kitchen-stat__dot" />
@@ -51,14 +55,14 @@ export default function KitchenView() {
         {/* Pending Column */}
         <div className="kitchen-col">
           <div className="kitchen-col__header kitchen-col__header--pending">
-            <span className="kitchen-col__icon">📋</span>
+            <ClipboardList size={16} className="kitchen-col__icon" />
             <span className="kitchen-col__title">Mới nhận</span>
             <span className="kitchen-col__count">{pending.length}</span>
           </div>
           <div className="kitchen-col__body">
             {pending.length === 0 && (
               <div className="kitchen-empty">
-                <span>😌</span>
+                <Timer size={28} strokeWidth={1.5} />
                 <p>Chưa có đơn mới</p>
               </div>
             )}
@@ -69,10 +73,10 @@ export default function KitchenView() {
                   <span className="kitchen-card__time">{getTimeSince(order.createdAt)}</span>
                 </div>
                 <div className="kitchen-card__meta">
-                  {order.guestCount > 0 && <span>👤 {order.guestCount}</span>}
-                  {order.staffId && <span>👨‍💼 {STAFF_LIST.find(s => s.id === order.staffId)?.name}</span>}
+                  {order.guestCount > 0 && <span><Users size={11} /> {order.guestCount}</span>}
+                  {order.staffId && <span><UserRound size={11} /> {STAFF_LIST.find(s => s.id === order.staffId)?.name}</span>}
                   {order.orderType && order.orderType !== 'dine_in' && (
-                    <span className="kitchen-card__type">{ORDER_TYPES.find(t => t.id === order.orderType)?.icon} {ORDER_TYPES.find(t => t.id === order.orderType)?.label}</span>
+                    <span className="kitchen-card__type">{ORDER_TYPES.find(t => t.id === order.orderType)?.label}</span>
                   )}
                 </div>
                 <div className="kitchen-card__items">
@@ -86,7 +90,7 @@ export default function KitchenView() {
                 </div>
                 {order.note && (
                   <div className="kitchen-card__note">
-                    <span className="kitchen-card__note-icon">📝</span>
+                    <PencilLine size={13} className="kitchen-card__note-icon" />
                     <span>{order.note}</span>
                   </div>
                 )}
@@ -94,7 +98,7 @@ export default function KitchenView() {
                   className="btn btn--primary btn--full"
                   onClick={() => handleStart(order.id)}
                 >
-                  🔥 Bắt đầu làm
+                  <Flame size={15} /> Bắt đầu làm
                 </button>
               </div>
             ))}
@@ -104,14 +108,14 @@ export default function KitchenView() {
         {/* Cooking Column */}
         <div className="kitchen-col">
           <div className="kitchen-col__header kitchen-col__header--cooking">
-            <span className="kitchen-col__icon">🔥</span>
+            <Flame size={16} className="kitchen-col__icon" />
             <span className="kitchen-col__title">Đang làm</span>
             <span className="kitchen-col__count">{cooking.length}</span>
           </div>
           <div className="kitchen-col__body">
             {cooking.length === 0 && (
               <div className="kitchen-empty">
-                <span>⏳</span>
+                <Timer size={28} strokeWidth={1.5} />
                 <p>Không có món đang làm</p>
               </div>
             )}
@@ -120,12 +124,12 @@ export default function KitchenView() {
                 <div className="kitchen-card__head">
                   <span className="kitchen-card__table">{order.tableName}</span>
                   <span className="kitchen-card__time kitchen-card__time--live">
-                    ⏱ {getTimeSince(order.createdAt)}
+                    <Timer size={12} /> {getTimeSince(order.createdAt)}
                   </span>
                 </div>
                 <div className="kitchen-card__meta">
-                  {order.guestCount > 0 && <span>👤 {order.guestCount}</span>}
-                  {order.staffId && <span>👨‍💼 {STAFF_LIST.find(s => s.id === order.staffId)?.name}</span>}
+                  {order.guestCount > 0 && <span><Users size={11} /> {order.guestCount}</span>}
+                  {order.staffId && <span><UserRound size={11} /> {STAFF_LIST.find(s => s.id === order.staffId)?.name}</span>}
                 </div>
                 <div className="kitchen-card__items">
                   {order.items.map((item, i) => (
@@ -138,7 +142,7 @@ export default function KitchenView() {
                 </div>
                 {order.note && (
                   <div className="kitchen-card__note">
-                    <span className="kitchen-card__note-icon">📝</span>
+                    <PencilLine size={13} className="kitchen-card__note-icon" />
                     <span>{order.note}</span>
                   </div>
                 )}
@@ -146,7 +150,7 @@ export default function KitchenView() {
                   className="btn btn--accent btn--full"
                   onClick={() => handleComplete(order.id, order.tableName)}
                 >
-                  ✅ Hoàn thành - Phục vụ
+                  <CircleCheck size={15} /> Hoàn thành - Phục vụ
                 </button>
               </div>
             ))}
@@ -156,14 +160,14 @@ export default function KitchenView() {
         {/* Done Column */}
         <div className="kitchen-col">
           <div className="kitchen-col__header kitchen-col__header--done">
-            <span className="kitchen-col__icon">✅</span>
+            <CircleCheck size={16} className="kitchen-col__icon" />
             <span className="kitchen-col__title">Đã xong</span>
             <span className="kitchen-col__count">{done.length}</span>
           </div>
           <div className="kitchen-col__body">
             {recentDone.length === 0 && (
               <div className="kitchen-empty">
-                <span>🍳</span>
+                <ChefHat size={28} strokeWidth={1.5} />
                 <p>Chưa có món hoàn thành</p>
               </div>
             )}
@@ -178,12 +182,12 @@ export default function KitchenView() {
                 <div className="kitchen-card__items kitchen-card__items--compact">
                   {order.items.map((item, i) => (
                     <span key={i} className="kitchen-card__item-compact">
-                      {item.image} {item.name} ×{item.quantity}
+                      {item.name} ×{item.quantity}
                     </span>
                   ))}
                 </div>
                 <span className={`kitchen-card__badge ${order.status === 'paid' ? 'kitchen-card__badge--paid' : ''}`}>
-                  {order.status === 'paid' ? '💰 Đã thanh toán' : '✅ Đã phục vụ'}
+                  {order.status === 'paid' ? <><Banknote size={12} /> Đã thanh toán</> : <><CircleCheck size={12} /> Đã phục vụ</>}
                 </span>
               </div>
             ))}

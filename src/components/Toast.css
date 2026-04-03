@@ -30,9 +30,13 @@
 .toast--info    { border-left-color: var(--color-info); }
 
 .toast__icon {
-  font-size: var(--text-md);
   flex-shrink: 0;
 }
+
+.toast--success .toast__icon { color: var(--color-accent); }
+.toast--warning .toast__icon { color: var(--color-warning); }
+.toast--error .toast__icon   { color: var(--color-danger); }
+.toast--info .toast__icon    { color: var(--color-info); }
 
 .toast__msg {
   color: var(--color-text);
