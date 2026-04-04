@@ -498,6 +498,7 @@ export default function OrderView() {
                   >
                     <span className="menu-card__image">{item.image}</span>
                     <span className="menu-card__name">{item.name}</span>
+                    {item.desc && <span className="menu-card__desc">{item.desc}</span>}
                     <span className="menu-card__price">{formatCurrency(item.price)}</span>
                     {item.popular && <span className="menu-card__badge">HOT</span>}
                     {inCart && (

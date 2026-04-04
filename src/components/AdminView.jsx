@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import useStore from '../store/useStore';
-import { formatCurrency, STAFF_LIST, ORDER_TYPES } from '../data/mockData';
+import { formatCurrency, STAFF_LIST, ORDER_TYPES, RESTAURANT_INFO } from '../data/mockData';
 import {
   LayoutDashboard, Trash2, CircleDollarSign, Package, Armchair,
   TrendingUp, Users, ClipboardList, Trophy, Timer, Flame,
@@ -33,7 +33,7 @@ export default function AdminView() {
       <div className="admin-view__header">
         <div>
           <h2 className="section-title"><LayoutDashboard size={20} /> Dashboard</h2>
-          <span className="admin-view__subtitle">Tổng quan hoạt động nhà hàng</span>
+          <span className="admin-view__subtitle">Tổng quan hoạt động · {RESTAURANT_INFO.name}</span>
         </div>
         <button className="btn btn--danger btn--sm" id="btn-reset" onClick={handleReset}>
           <Trash2 size={14} /> Reset dữ liệu

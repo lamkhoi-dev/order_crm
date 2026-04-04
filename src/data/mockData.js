@@ -1,54 +1,83 @@
-// Mock data for OrderFlow restaurant system
+// Data cho hệ thống Order - Hà Nội Xưa
+// 220 Nguyễn Hoàng, P. An Phú, TP. Thủ Đức | 0901 681 567
+
+export const RESTAURANT_INFO = {
+  name: 'Hà Nội Xưa',
+  subtitle: 'Bún riêu · Bún đậu',
+  phone: '0901681567',
+  address: '220 Nguyễn Hoàng, P. An Phú, TP. Thủ Đức',
+  established: 2016,
+};
 
 export const MENU_CATEGORIES = [
-  { id: 'popular', name: 'Hay Dùng' },
-  { id: 'appetizer', name: 'Khai Vị' },
-  { id: 'main', name: 'Món Chính' },
-  { id: 'noodle', name: 'Mì & Phở' },
-  { id: 'seafood', name: 'Hải Sản' },
-  { id: 'drink', name: 'Đồ Uống' },
-  { id: 'dessert', name: 'Tráng Miệng' },
+  { id: 'popular', name: 'Bán Chạy' },
+  { id: 'c1',      name: 'Bún Riêu Tóp Mỡ' },
+  { id: 'c2',      name: 'Bún Đậu Mắm Tôm' },
+  { id: 'c3',      name: 'Món Ngon Hà Nội' },
+  { id: 'c4',      name: 'Lẩu Riêu Cua' },
+  { id: 'c5',      name: 'Thêm Bún Đậu' },
+  { id: 'c6',      name: 'Topping Bún Riêu' },
+  { id: 'c7',      name: 'Thức Uống' },
+  { id: 'c8',      name: 'Khác' },
 ];
 
 export const MENU_ITEMS = [
-  // Khai Vị
-  { id: 1,  name: 'Gỏi cuốn tôm thịt',     price: 55000,  category: 'appetizer', image: '🌯', popular: true },
-  { id: 2,  name: 'Chả giò rế',              price: 65000,  category: 'appetizer', image: '🥟' },
-  { id: 3,  name: 'Salad trộn dầu giấm',     price: 45000,  category: 'appetizer', image: '🥗' },
-  { id: 4,  name: 'Súp bào ngư',             price: 85000,  category: 'appetizer', image: '🍲', popular: true },
+  // ── Bún Riêu Tóp Mỡ ──
+  { id: 'br1', name: 'Tô Ngon Miệng',  desc: 'Đậu, giò tai, mọc',                   price: 48000,  category: 'c1', image: '🍜' },
+  { id: 'br2', name: 'Tô Đầy Đủ',      desc: 'Đậu, giò tai, mọc, bò',               price: 59000,  category: 'c1', image: '🍜', popular: true },
+  { id: 'br3', name: 'Tô Đặc Biệt',    desc: 'Đậu, giò tai, mọc, bò, trứng lộn',    price: 68000,  category: 'c1', image: '🍜', popular: true },
+  { id: 'br4', name: 'Tô Tự Chọn',     desc: 'Đậu, riêu',                            price: 31000,  category: 'c1', image: '🍜' },
 
-  // Món chính
-  { id: 5,  name: 'Cơm chiên dương châu',    price: 75000,  category: 'main', image: '🍚', popular: true },
-  { id: 6,  name: 'Sườn nướng mật ong',      price: 120000, category: 'main', image: '🍖', popular: true },
-  { id: 7,  name: 'Gà rang muối',            price: 95000,  category: 'main', image: '🍗' },
-  { id: 8,  name: 'Bò lúc lắc khoai tây',   price: 145000, category: 'main', image: '🥩', popular: true },
-  { id: 9,  name: 'Cơm tấm sườn bì chả',    price: 65000,  category: 'main', image: '🍱' },
-  { id: 10, name: 'Thịt kho tàu',            price: 85000,  category: 'main', image: '🥘' },
+  // ── Bún Đậu Mắm Tôm ──
+  { id: 'bd1', name: 'Mẹt Thập Cẩm',      price: 63000,  category: 'c2', image: '🥘' },
+  { id: 'bd2', name: 'Mẹt Tá Lả',         price: 78000,  category: 'c2', image: '🥘', popular: true },
+  { id: 'bd3', name: 'Mẹt Bún Đậu',       price: 30000,  category: 'c2', image: '🥘' },
+  { id: 'bd4', name: 'Bún Đậu Chả Cốm',   price: 49000,  category: 'c2', image: '🥘' },
+  { id: 'bd5', name: 'Mẹt Bún Đậu Thịt',  price: 49000,  category: 'c2', image: '🥘' },
 
-  // Mì & Phở
-  { id: 11, name: 'Phở bò tái chín',         price: 65000,  category: 'noodle', image: '🍜', popular: true },
-  { id: 12, name: 'Bún bò Huế',              price: 70000,  category: 'noodle', image: '🍜' },
-  { id: 13, name: 'Mì xào hải sản',          price: 85000,  category: 'noodle', image: '🍝' },
-  { id: 14, name: 'Hủ tiếu Nam Vang',        price: 60000,  category: 'noodle', image: '🥣' },
+  // ── Món Ngon Hà Nội ──
+  { id: 'mn1', name: 'Nem chua rán',         price: 69000,  category: 'c3', image: '🥟', popular: true },
+  { id: 'mn2', name: 'Chả mực Hạ Long',      price: 69000,  category: 'c3', image: '🦑', popular: true },
+  { id: 'mn3', name: 'Thú linh chiên giòn',  price: 69000,  category: 'c3', image: '🍗' },
+  { id: 'mn4', name: 'Chân gà muối chiên',   price: 75000,  category: 'c3', image: '🍗', popular: true },
+  { id: 'mn5', name: 'Bánh dày rán ruốc',    price: 40000,  category: 'c3', image: '🍘' },
+  { id: 'mn6', name: 'Giò tai rán',          price: 55000,  category: 'c3', image: '🥩' },
 
-  // Hải sản
-  { id: 15, name: 'Tôm rang muối',           price: 165000, category: 'seafood', image: '🍤', popular: true },
-  { id: 16, name: 'Cua sốt tiêu đen',       price: 250000, category: 'seafood', image: '🦀' },
-  { id: 17, name: 'Mực chiên giòn',          price: 130000, category: 'seafood', image: '🦑' },
-  { id: 18, name: 'Cá lóc nướng trui',       price: 180000, category: 'seafood', image: '🐟' },
+  // ── Lẩu Riêu Cua Bắp Bò ──
+  { id: 'l1', name: 'Lẩu nhỏ (2-3 người)', price: 269000, category: 'c4', image: '🫕' },
+  { id: 'l2', name: 'Lẩu lớn (4-5 người)', price: 379000, category: 'c4', image: '🫕' },
 
-  // Đồ uống
-  { id: 19, name: 'Trà đá',                  price: 5000,   category: 'drink', image: '🧊' },
-  { id: 20, name: 'Cà phê sữa đá',          price: 25000,  category: 'drink', image: '☕', popular: true },
-  { id: 21, name: 'Nước ép cam',             price: 35000,  category: 'drink', image: '🍊' },
-  { id: 22, name: 'Sinh tố bơ',              price: 40000,  category: 'drink', image: '🥑' },
-  { id: 23, name: 'Bia Sài Gòn',             price: 20000,  category: 'drink', image: '🍺' },
-  { id: 24, name: 'Coca Cola',               price: 15000,  category: 'drink', image: '🥤' },
+  // ── Món Thêm Bún Đậu ──
+  { id: 'tbd1', name: 'Bún Lá',     price: 12000, category: 'c5', image: '🍚' },
+  { id: 'tbd2', name: 'Đậu Hũ',    price: 20000, category: 'c5', image: '🧈' },
+  { id: 'tbd3', name: 'Chả Cốm',   price: 28000, category: 'c5', image: '🟢' },
+  { id: 'tbd4', name: 'Thịt Bắp',  price: 30000, category: 'c5', image: '🥩' },
+  { id: 'tbd5', name: 'Dồi Tiết',  price: 43000, category: 'c5', image: '🌭' },
 
-  // Tráng miệng
-  { id: 25, name: 'Chè ba màu',              price: 30000,  category: 'dessert', image: '🍨' },
-  { id: 26, name: 'Bánh flan',               price: 25000,  category: 'dessert', image: '🍮', popular: true },
-  { id: 27, name: 'Trái cây dĩa',            price: 45000,  category: 'dessert', image: '🍉' },
+  // ── Topping Bún Riêu ──
+  { id: 'tbr1', name: 'Mọc',            price: 10000, category: 'c6', image: '🧆' },
+  { id: 'tbr2', name: 'Giò tai',        price: 10000, category: 'c6', image: '🥩' },
+  { id: 'tbr3', name: 'Trứng vịt lộn',  price: 10000, category: 'c6', image: '🥚' },
+  { id: 'tbr4', name: 'Bò tái',         price: 17000, category: 'c6', image: '🥩' },
+  { id: 'tbr5', name: 'Tóp mỡ',        price: 17000, category: 'c6', image: '🥓' },
+  { id: 'tbr6', name: 'Riêu cua',       price: 10000, category: 'c6', image: '🦀' },
+  { id: 'tbr7', name: 'Đậu mơ',        price: 10000, category: 'c6', image: '🫛' },
+
+  // ── Drink ──
+  { id: 'd1',  name: 'Sấu đá',                price: 25000, category: 'c7', image: '🧊' },
+  { id: 'd2',  name: 'Mơ đá',                 price: 25000, category: 'c7', image: '🧊' },
+  { id: 'd3',  name: 'Trà tắc',               price: 18000, category: 'c7', image: '🍋' },
+  { id: 'd4',  name: 'Sữa chua nếp cẩm',     price: 25000, category: 'c7', image: '🥛' },
+  { id: 'd5',  name: 'Sữa chua dẻo ca cao',   price: 25000, category: 'c7', image: '🍫' },
+  { id: 'd6',  name: 'Bia Hà Nội',            price: 26000, category: 'c7', image: '🍺' },
+  { id: 'd7',  name: 'Bia Tiger',             price: 26000, category: 'c7', image: '🍺' },
+  { id: 'd8',  name: 'Trà Ô Long',            price: 18000, category: 'c7', image: '🍵' },
+  { id: 'd9',  name: 'Pepsi / Sting / 7up',   price: 20000, category: 'c7', image: '🥤' },
+  { id: 'd10', name: 'Nước suối',             price: 12000, category: 'c7', image: '💧' },
+  { id: 'd11', name: 'Trà đá',                price: 3000,  category: 'c7', image: '🧊' },
+
+  // ── Khác ──
+  { id: 'k1', name: 'Khăn ướt', price: 2000, category: 'c8', image: '🧻' },
 ];
 
 // Staff / NV Phục vụ
@@ -80,7 +109,7 @@ export const INITIAL_TABLES = Array.from({ length: 12 }, (_, i) => ({
   name: `Bàn ${i + 1}`,
   seats: i < 4 ? 2 : i < 8 ? 4 : 6,
   area: i < 4 ? 'A' : i < 8 ? 'B' : 'C',
-  status: 'empty', // empty | ordering | waiting | served
+  status: 'empty',
   orderId: null,
   guestCount: 0,
 }));

@@ -1,4 +1,5 @@
 import useStore from '../store/useStore';
+import { RESTAURANT_INFO } from '../data/mockData';
 import { Utensils, ChefHat, BarChart3 } from 'lucide-react';
 import './Header.css';
 
@@ -21,8 +22,8 @@ export default function Header() {
       <div className="header__brand">
         <Utensils size={22} className="header__logo-icon" />
         <div>
-          <h1 className="header__title">OrderFlow</h1>
-          <span className="header__subtitle">Restaurant POS</span>
+          <h1 className="header__title">{RESTAURANT_INFO.name}</h1>
+          <span className="header__subtitle">{RESTAURANT_INFO.subtitle}</span>
         </div>
       </div>
 
