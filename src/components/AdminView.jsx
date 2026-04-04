@@ -4,7 +4,7 @@ import { formatCurrency, STAFF_LIST, ORDER_TYPES, RESTAURANT_INFO } from '../dat
 import {
   LayoutDashboard, Trash2, CircleDollarSign, Package, Armchair,
   TrendingUp, Users, ClipboardList, Trophy, Timer, Flame,
-  CircleCheck, Banknote, UserRound, BarChart3
+  CircleCheck, Banknote, UserRound, BarChart3, Landmark
 } from 'lucide-react';
 import './AdminView.css';
 
@@ -122,7 +122,7 @@ export default function AdminView() {
             {stats.topItems.map((item, i) => (
               <div key={i} className="top-item">
                 <div className="top-item__rank">#{i + 1}</div>
-                <span className="top-item__image">{item.image}</span>
+                <img className="top-item__image" src={item.image} alt={item.name} />
                 <div className="top-item__info">
                   <span className="top-item__name">{item.name}</span>
                   <div className="top-item__bar-container">
@@ -182,6 +182,12 @@ export default function AdminView() {
                 </div>
                 <div className="order-row__meta">
                   <span className="order-row__total">{formatCurrency(order.total)}</span>
+                  {order.paymentMethod && (
+                    <span className={`order-row__payment order-row__payment--${order.paymentMethod}`}>
+                      {order.paymentMethod === 'cash' ? <Banknote size={11} /> : <Landmark size={11} />}
+                      {order.paymentMethod === 'cash' ? 'TM' : 'CK'}
+                    </span>
+                  )}
                   <span className="order-row__time">
                     {new Date(order.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                   </span>

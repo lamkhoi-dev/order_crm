@@ -21,63 +21,81 @@ export const MENU_CATEGORIES = [
   { id: 'c8',      name: 'Khác' },
 ];
 
+// Image mapping per category
+const IMG = {
+  c1: '/food/bun-rieu.png',
+  c2: '/food/bun-dau.png',
+  c3: '/food/nem-ran.png',
+  c4: '/food/lau.png',
+  c5: '/food/topping.png',
+  c6: '/food/topping.png',
+  c7: '/food/drink.png',
+  c8: '/food/topping.png',
+};
+
 export const MENU_ITEMS = [
   // ── Bún Riêu Tóp Mỡ ──
-  { id: 'br1', name: 'Tô Ngon Miệng',  desc: 'Đậu, giò tai, mọc',                   price: 48000,  category: 'c1', image: '🍜' },
-  { id: 'br2', name: 'Tô Đầy Đủ',      desc: 'Đậu, giò tai, mọc, bò',               price: 59000,  category: 'c1', image: '🍜', popular: true },
-  { id: 'br3', name: 'Tô Đặc Biệt',    desc: 'Đậu, giò tai, mọc, bò, trứng lộn',    price: 68000,  category: 'c1', image: '🍜', popular: true },
-  { id: 'br4', name: 'Tô Tự Chọn',     desc: 'Đậu, riêu',                            price: 31000,  category: 'c1', image: '🍜' },
+  { id: 'br1', name: 'Tô Ngon Miệng',  desc: 'Đậu, giò tai, mọc',                   price: 48000,  category: 'c1', image: IMG.c1 },
+  { id: 'br2', name: 'Tô Đầy Đủ',      desc: 'Đậu, giò tai, mọc, bò',               price: 59000,  category: 'c1', image: IMG.c1, popular: true },
+  { id: 'br3', name: 'Tô Đặc Biệt',    desc: 'Đậu, giò tai, mọc, bò, trứng lộn',    price: 68000,  category: 'c1', image: IMG.c1, popular: true },
+  { id: 'br4', name: 'Tô Tự Chọn',     desc: 'Đậu, riêu',                            price: 31000,  category: 'c1', image: IMG.c1 },
 
   // ── Bún Đậu Mắm Tôm ──
-  { id: 'bd1', name: 'Mẹt Thập Cẩm',      price: 63000,  category: 'c2', image: '🥘' },
-  { id: 'bd2', name: 'Mẹt Tá Lả',         price: 78000,  category: 'c2', image: '🥘', popular: true },
-  { id: 'bd3', name: 'Mẹt Bún Đậu',       price: 30000,  category: 'c2', image: '🥘' },
-  { id: 'bd4', name: 'Bún Đậu Chả Cốm',   price: 49000,  category: 'c2', image: '🥘' },
-  { id: 'bd5', name: 'Mẹt Bún Đậu Thịt',  price: 49000,  category: 'c2', image: '🥘' },
+  { id: 'bd1', name: 'Mẹt Thập Cẩm',      price: 63000,  category: 'c2', image: IMG.c2 },
+  { id: 'bd2', name: 'Mẹt Tá Lả',         price: 78000,  category: 'c2', image: IMG.c2, popular: true },
+  { id: 'bd3', name: 'Mẹt Bún Đậu',       price: 30000,  category: 'c2', image: IMG.c2 },
+  { id: 'bd4', name: 'Bún Đậu Chả Cốm',   price: 49000,  category: 'c2', image: IMG.c2 },
+  { id: 'bd5', name: 'Mẹt Bún Đậu Thịt',  price: 49000,  category: 'c2', image: IMG.c2 },
 
   // ── Món Ngon Hà Nội ──
-  { id: 'mn1', name: 'Nem chua rán',         price: 69000,  category: 'c3', image: '🥟', popular: true },
-  { id: 'mn2', name: 'Chả mực Hạ Long',      price: 69000,  category: 'c3', image: '🦑', popular: true },
-  { id: 'mn3', name: 'Thú linh chiên giòn',  price: 69000,  category: 'c3', image: '🍗' },
-  { id: 'mn4', name: 'Chân gà muối chiên',   price: 75000,  category: 'c3', image: '🍗', popular: true },
-  { id: 'mn5', name: 'Bánh dày rán ruốc',    price: 40000,  category: 'c3', image: '🍘' },
-  { id: 'mn6', name: 'Giò tai rán',          price: 55000,  category: 'c3', image: '🥩' },
+  { id: 'mn1', name: 'Nem chua rán',         price: 69000,  category: 'c3', image: IMG.c3, popular: true },
+  { id: 'mn2', name: 'Chả mực Hạ Long',      price: 69000,  category: 'c3', image: '/food/cha-muc.png', popular: true },
+  { id: 'mn3', name: 'Thú linh chiên giòn',  price: 69000,  category: 'c3', image: '/food/ga-chien.png' },
+  { id: 'mn4', name: 'Chân gà muối chiên',   price: 75000,  category: 'c3', image: '/food/ga-chien.png', popular: true },
+  { id: 'mn5', name: 'Bánh dày rán ruốc',    price: 40000,  category: 'c3', image: IMG.c3 },
+  { id: 'mn6', name: 'Giò tai rán',          price: 55000,  category: 'c3', image: IMG.c5 },
 
   // ── Lẩu Riêu Cua Bắp Bò ──
-  { id: 'l1', name: 'Lẩu nhỏ (2-3 người)', price: 269000, category: 'c4', image: '🫕' },
-  { id: 'l2', name: 'Lẩu lớn (4-5 người)', price: 379000, category: 'c4', image: '🫕' },
+  { id: 'l1', name: 'Lẩu nhỏ (2-3 người)', price: 269000, category: 'c4', image: IMG.c4 },
+  { id: 'l2', name: 'Lẩu lớn (4-5 người)', price: 379000, category: 'c4', image: IMG.c4 },
 
   // ── Món Thêm Bún Đậu ──
-  { id: 'tbd1', name: 'Bún Lá',     price: 12000, category: 'c5', image: '🍚' },
-  { id: 'tbd2', name: 'Đậu Hũ',    price: 20000, category: 'c5', image: '🧈' },
-  { id: 'tbd3', name: 'Chả Cốm',   price: 28000, category: 'c5', image: '🟢' },
-  { id: 'tbd4', name: 'Thịt Bắp',  price: 30000, category: 'c5', image: '🥩' },
-  { id: 'tbd5', name: 'Dồi Tiết',  price: 43000, category: 'c5', image: '🌭' },
+  { id: 'tbd1', name: 'Bún Lá',     price: 12000, category: 'c5', image: IMG.c5 },
+  { id: 'tbd2', name: 'Đậu Hũ',    price: 20000, category: 'c5', image: IMG.c5 },
+  { id: 'tbd3', name: 'Chả Cốm',   price: 28000, category: 'c5', image: IMG.c5 },
+  { id: 'tbd4', name: 'Thịt Bắp',  price: 30000, category: 'c5', image: IMG.c5 },
+  { id: 'tbd5', name: 'Dồi Tiết',  price: 43000, category: 'c5', image: IMG.c5 },
 
   // ── Topping Bún Riêu ──
-  { id: 'tbr1', name: 'Mọc',            price: 10000, category: 'c6', image: '🧆' },
-  { id: 'tbr2', name: 'Giò tai',        price: 10000, category: 'c6', image: '🥩' },
-  { id: 'tbr3', name: 'Trứng vịt lộn',  price: 10000, category: 'c6', image: '🥚' },
-  { id: 'tbr4', name: 'Bò tái',         price: 17000, category: 'c6', image: '🥩' },
-  { id: 'tbr5', name: 'Tóp mỡ',        price: 17000, category: 'c6', image: '🥓' },
-  { id: 'tbr6', name: 'Riêu cua',       price: 10000, category: 'c6', image: '🦀' },
-  { id: 'tbr7', name: 'Đậu mơ',        price: 10000, category: 'c6', image: '🫛' },
+  { id: 'tbr1', name: 'Mọc',            price: 10000, category: 'c6', image: IMG.c6 },
+  { id: 'tbr2', name: 'Giò tai',        price: 10000, category: 'c6', image: IMG.c6 },
+  { id: 'tbr3', name: 'Trứng vịt lộn',  price: 10000, category: 'c6', image: IMG.c6 },
+  { id: 'tbr4', name: 'Bò tái',         price: 17000, category: 'c6', image: IMG.c6 },
+  { id: 'tbr5', name: 'Tóp mỡ',        price: 17000, category: 'c6', image: IMG.c6 },
+  { id: 'tbr6', name: 'Riêu cua',       price: 10000, category: 'c6', image: IMG.c6 },
+  { id: 'tbr7', name: 'Đậu mơ',        price: 10000, category: 'c6', image: IMG.c6 },
 
   // ── Drink ──
-  { id: 'd1',  name: 'Sấu đá',                price: 25000, category: 'c7', image: '🧊' },
-  { id: 'd2',  name: 'Mơ đá',                 price: 25000, category: 'c7', image: '🧊' },
-  { id: 'd3',  name: 'Trà tắc',               price: 18000, category: 'c7', image: '🍋' },
-  { id: 'd4',  name: 'Sữa chua nếp cẩm',     price: 25000, category: 'c7', image: '🥛' },
-  { id: 'd5',  name: 'Sữa chua dẻo ca cao',   price: 25000, category: 'c7', image: '🍫' },
-  { id: 'd6',  name: 'Bia Hà Nội',            price: 26000, category: 'c7', image: '🍺' },
-  { id: 'd7',  name: 'Bia Tiger',             price: 26000, category: 'c7', image: '🍺' },
-  { id: 'd8',  name: 'Trà Ô Long',            price: 18000, category: 'c7', image: '🍵' },
-  { id: 'd9',  name: 'Pepsi / Sting / 7up',   price: 20000, category: 'c7', image: '🥤' },
-  { id: 'd10', name: 'Nước suối',             price: 12000, category: 'c7', image: '💧' },
-  { id: 'd11', name: 'Trà đá',                price: 3000,  category: 'c7', image: '🧊' },
+  { id: 'd1',  name: 'Sấu đá',                price: 25000, category: 'c7', image: IMG.c7 },
+  { id: 'd2',  name: 'Mơ đá',                 price: 25000, category: 'c7', image: IMG.c7 },
+  { id: 'd3',  name: 'Trà tắc',               price: 18000, category: 'c7', image: IMG.c7 },
+  { id: 'd4',  name: 'Sữa chua nếp cẩm',     price: 25000, category: 'c7', image: IMG.c7 },
+  { id: 'd5',  name: 'Sữa chua dẻo ca cao',   price: 25000, category: 'c7', image: IMG.c7 },
+  { id: 'd6',  name: 'Bia Hà Nội',            price: 26000, category: 'c7', image: IMG.c7 },
+  { id: 'd7',  name: 'Bia Tiger',             price: 26000, category: 'c7', image: IMG.c7 },
+  { id: 'd8',  name: 'Trà Ô Long',            price: 18000, category: 'c7', image: IMG.c7 },
+  { id: 'd9',  name: 'Pepsi / Sting / 7up',   price: 20000, category: 'c7', image: IMG.c7 },
+  { id: 'd10', name: 'Nước suối',             price: 12000, category: 'c7', image: IMG.c7 },
+  { id: 'd11', name: 'Trà đá',                price: 3000,  category: 'c7', image: IMG.c7 },
 
   // ── Khác ──
-  { id: 'k1', name: 'Khăn ướt', price: 2000, category: 'c8', image: '🧻' },
+  { id: 'k1', name: 'Khăn ướt', price: 2000, category: 'c8', image: IMG.c8 },
+];
+
+// Payment methods
+export const PAYMENT_METHODS = [
+  { id: 'cash',     label: 'Tiền mặt',     icon: 'cash' },
+  { id: 'transfer', label: 'Chuyển khoản', icon: 'transfer' },
 ];
 
 // Staff / NV Phục vụ

@@ -171,7 +171,10 @@
 .top-item:nth-child(3) .top-item__rank { color: #C07A4A; }
 
 .top-item__image {
-  font-size: var(--text-lg);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
   flex-shrink: 0;
 }
 
@@ -297,6 +300,28 @@
   font-size: var(--text-sm);
   font-weight: 700;
   color: var(--color-text);
+}
+
+.order-row__payment {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.order-row__payment--cash {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.order-row__payment--transfer {
+  background: #e3f2fd;
+  color: #1565c0;
 }
 
 .order-row__time {

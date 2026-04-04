@@ -271,9 +271,9 @@ const useStore = create((set, get) => ({
   },
 
   // Payment
-  payOrder: (orderId) => {
+  payOrder: (orderId, paymentMethod = 'cash') => {
     const orders = get().orders.map(o =>
-      o.id === orderId ? { ...o, status: 'paid', paidAt: new Date().toISOString() } : o
+      o.id === orderId ? { ...o, status: 'paid', paidAt: new Date().toISOString(), paymentMethod } : o
     );
     saveState('orders', orders);
 

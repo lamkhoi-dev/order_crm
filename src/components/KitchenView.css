@@ -180,7 +180,13 @@
   font-size: var(--text-sm);
 }
 
-.kitchen-card__item-img { font-size: var(--text-md); }
+.kitchen-card__item-img {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+}
 .kitchen-card__item-name { flex: 1; font-weight: 500; }
 .kitchen-card__item-qty  { font-weight: 700; color: var(--color-primary); }
 

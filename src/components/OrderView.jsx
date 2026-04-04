@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
 import useStore from '../store/useStore';
-import { MENU_ITEMS, MENU_CATEGORIES, TABLE_STATUS_CONFIG, STAFF_LIST, ORDER_TYPES, TABLE_AREAS, formatCurrency } from '../data/mockData';
+import { MENU_ITEMS, MENU_CATEGORIES, TABLE_STATUS_CONFIG, STAFF_LIST, ORDER_TYPES, TABLE_AREAS, PAYMENT_METHODS, formatCurrency } from '../data/mockData';
 import {
   LayoutGrid, ClipboardList, UserRound, Search, X, Minus, Plus, Trash2,
   ShoppingCart, Send, Save, CircleDollarSign, Banknote, Clock, PencilLine,
   Users, ChevronDown, CircleCheck, Flame, Timer, PlusCircle, Utensils,
-  ArrowUpFromLine
+  ArrowUpFromLine, Landmark
 } from 'lucide-react';
 import './OrderView.css';
 
@@ -38,6 +38,7 @@ export default function OrderView() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [showCart, setShowCart] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [searchQuery, setSearchQuery] = useState('');
   const [orderTab, setOrderTab] = useState('dine_in');
   const [showOrderList, setShowOrderList] = useState(false);
@@ -103,9 +104,11 @@ export default function OrderView() {
   };
 
   const handlePay = (orderId) => {
-    payOrder(orderId);
-    addToast('Thanh toán thành công!', 'success');
+    const methodLabel = PAYMENT_METHODS.find(m => m.id === paymentMethod)?.label || 'Tiền mặt';
+    payOrder(orderId, paymentMethod);
+    addToast(`Thanh toán ${methodLabel} thành công!`, 'success');
     setShowPayment(false);
+    setPaymentMethod('cash');
   };
 
   const handleAddToCart = (itemId) => {
@@ -420,10 +423,30 @@ export default function OrderView() {
                     <span className="payment-total__amount">{formatCurrency(tableOrder.total)}</span>
                   </div>
                 </div>
+                <div className="payment-method">
+                  <span className="payment-method__label">Phương thức thanh toán</span>
+                  <div className="payment-method__options">
+                    <button
+                      className={`payment-method__btn ${paymentMethod === 'cash' ? 'payment-method__btn--active' : ''}`}
+                      onClick={() => setPaymentMethod('cash')}
+                    >
+                      <Banknote size={20} />
+                      <span>Tiền mặt</span>
+                    </button>
+                    <button
+                      className={`payment-method__btn ${paymentMethod === 'transfer' ? 'payment-method__btn--active' : ''}`}
+                      onClick={() => setPaymentMethod('transfer')}
+                    >
+                      <Landmark size={20} />
+                      <span>Chuyển khoản</span>
+                    </button>
+                  </div>
+                </div>
                 <div className="payment-modal__actions">
                   <button className="btn btn--secondary" onClick={() => setShowPayment(false)}>Huỷ bỏ</button>
                   <button className="btn btn--primary btn--lg" id="btn-pay" onClick={() => handlePay(tableOrder.id)}>
-                    <Banknote size={18} /> Thanh toán tiền mặt
+                    {paymentMethod === 'cash' ? <Banknote size={18} /> : <Landmark size={18} />}
+                    Xác nhận thanh toán
                   </button>
                 </div>
               </div>
@@ -496,7 +519,7 @@ export default function OrderView() {
                     onClick={() => handleAddToCart(item.id)}
                     disabled={!canOrder}
                   >
-                    <span className="menu-card__image">{item.image}</span>
+                    <img className="menu-card__image" src={item.image} alt={item.name} loading="lazy" />
                     <span className="menu-card__name">{item.name}</span>
                     {item.desc && <span className="menu-card__desc">{item.desc}</span>}
                     <span className="menu-card__price">{formatCurrency(item.price)}</span>
@@ -562,7 +585,7 @@ export default function OrderView() {
                 {cart.map(c => (
                   <div key={c.itemId} className="cart-item">
                     <div className="cart-item__info">
-                      <span className="cart-item__image">{c.image}</span>
+                      <img className="cart-item__image" src={c.image} alt={c.name} />
                       <div>
                         <span className="cart-item__name">{c.name}</span>
                         <span className="cart-item__unit-price">{formatCurrency(c.price)}</span>

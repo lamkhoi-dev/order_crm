@@ -82,7 +82,7 @@ export default function KitchenView() {
                 <div className="kitchen-card__items">
                   {order.items.map((item, i) => (
                     <div key={i} className="kitchen-card__item">
-                      <span className="kitchen-card__item-img">{item.image}</span>
+                      <img className="kitchen-card__item-img" src={item.image} alt={item.name} />
                       <span className="kitchen-card__item-name">{item.name}</span>
                       <span className="kitchen-card__item-qty">×{item.quantity}</span>
                     </div>
@@ -134,7 +134,7 @@ export default function KitchenView() {
                 <div className="kitchen-card__items">
                   {order.items.map((item, i) => (
                     <div key={i} className="kitchen-card__item">
-                      <span className="kitchen-card__item-img">{item.image}</span>
+                      <img className="kitchen-card__item-img" src={item.image} alt={item.name} />
                       <span className="kitchen-card__item-name">{item.name}</span>
                       <span className="kitchen-card__item-qty">×{item.quantity}</span>
                     </div>
