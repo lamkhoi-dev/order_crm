@@ -46,7 +46,7 @@ export default function OrderView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [orderTab, setOrderTab] = useState('dine_in');
   const [showOrderList, setShowOrderList] = useState(false);
-  const [tableAreaFilter, setTableAreaFilter] = useState('all');
+  const [tableAreaFilter, setTableAreaFilter] = useState(tableAreas[0]?.id || 'T1');
   const [adminPassInput, setAdminPassInput] = useState('');
   const [pendingDeleteItem, setPendingDeleteItem] = useState(null); // { orderId, itemIndex, itemName }
 
@@ -79,6 +79,16 @@ export default function OrderView() {
 
   const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
   const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
+
+  useEffect(() => {
+    if (tableAreas.length > 0 && !tableAreas.find(a => a.id === tableAreaFilter)) {
+      setTableAreaFilter(tableAreas[0].id);
+    }
+  }, [tableAreas, tableAreaFilter]);
+
+  useEffect(() => {
+    if (!showCart) setPendingDeleteItem(null);
+  }, [showCart]);
 
   const orderCounts = useMemo(() => {
     const active = orders.filter(o => o.status !== 'paid');
@@ -340,10 +350,6 @@ export default function OrderView() {
               <h2 className="section-title">Sơ đồ bàn</h2>
               <div className="section-header__right">
                 <div className="area-filter">
-                  <button
-                    className={`area-btn ${tableAreaFilter === 'all' ? 'area-btn--active' : ''}`}
-                    onClick={() => setTableAreaFilter('all')}
-                  >Tất cả</button>
                   {tableAreas.map(area => (
                     <button
                       key={area.id}
