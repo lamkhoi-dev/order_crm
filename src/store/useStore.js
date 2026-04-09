@@ -273,16 +273,16 @@ const useStore = create((set, get) => ({
       staffName: null,
       orderType,
       guestCount: table.guestCount || table.guest_count || 0,
-      status: 'cooking',
+      status: 'done',
       total: cart.reduce((sum, c) => sum + c.price * c.quantity, 0),
       createdAt: new Date().toISOString(),
-      completedAt: null,
+      completedAt: new Date().toISOString(),
       paidAt: null,
     };
 
     const orders = [...get().orders, order];
     const newTables = tables.map(t =>
-      t.id === selectedTableId ? { ...t, status: 'waiting', orderId } : t
+      t.id === selectedTableId ? { ...t, status: 'served', orderId } : t
     );
 
     set({
@@ -316,7 +316,7 @@ const useStore = create((set, get) => ({
       });
       const newTotal = mergedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
       const newNote = [o.note, cartNote].filter(Boolean).join(' | ');
-      return { ...o, items: mergedItems, total: newTotal, note: newNote, status: 'cooking' };
+      return { ...o, items: mergedItems, total: newTotal, note: newNote, status: 'done' };
     });
 
     set({ orders, cart: [], cartNote: '' });
