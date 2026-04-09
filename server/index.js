@@ -108,6 +108,16 @@ app.post('/api/print/shift-report', async (req, res) => {
   }
 });
 
+// Test tất cả mã tiếng Việt (Code Pages)
+app.get('/api/print/test', async (req, res) => {
+  try {
+    const result = await testPrinter();
+    res.json({ success: true, message: 'Đã gửi lệnh in test mã Tiếng Việt tới máy in', status: result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`\n🖥️  POS Server running on http://localhost:${PORT}`);
   console.log(`   📦 Database: SQLite (server/pos.db)`);
