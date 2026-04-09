@@ -119,7 +119,7 @@ class EscPos {
 // PowerShell raw print
 // ──────────────────────────────────────
 
-const KITCHEN_PRINTER = process.env.KITCHEN_PRINTER || 'XP-80C';
+const KITCHEN_PRINTER = process.env.KITCHEN_PRINTER || 'Bếp';
 const RECEIPT_PRINTER = process.env.RECEIPT_PRINTER || 'XP-80C';
 
 function printRaw(printerName, buffer) {
