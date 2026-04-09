@@ -8,7 +8,8 @@ import {
   getAllOrders, getActiveOrders, getOrder, createOrder, updateOrder, deleteOrder,
   getAllDrafts, getDraft, createDraft, deleteDraft, getDraftsByTable,
   getStats, resetAll, runTransaction,
-  getCurrentShift, openShift, closeShift, getShift, getAllShifts, saveShiftExpense, calculateShiftStats
+  getCurrentShift, openShift, closeShift, getShift, getAllShifts, saveShiftExpense, calculateShiftStats,
+  getAllAreas, getAllCategories, getAllMenuItems, insertEntity, updateEntity, deleteEntity
 } from './database.js';
 
 const router = Router();
@@ -48,10 +49,15 @@ router.get('/orders/:id', (req, res) => {
 
 router.post('/orders', (req, res) => {
   try {
+    // Feature: Instant Order Completion (No Kitchen 'served' tracking required)
+    req.body.status = 'done';
+    if (req.body.items) {
+      req.body.items.forEach(it => { it.status = 'served'; });
+    }
     const order = createOrder(req.body);
     // Update table status
     if (req.body.tableId) {
-      updateTable(req.body.tableId, { status: 'waiting', order_id: req.body.id });
+      updateTable(req.body.tableId, { status: 'served', order_id: req.body.id });
     }
     res.status(201).json(order);
   } catch (err) {
@@ -238,6 +244,31 @@ router.post('/reset', (_req, res) => {
 });
 
 // ──────────────────────────────────────
+// Config Management
+// ──────────────────────────────────────
+
+router.get('/config/:table', (req, res) => {
+  const { table } = req.params;
+  const data = (table === 'table_areas') ? getAllAreas() : 
+               (table === 'categories') ? getAllCategories() : 
+               (table === 'menu_items') ? getAllMenuItems() : [];
+  res.json(data);
+});
+
+router.post('/config/:table', (req, res) => {
+  res.json(insertEntity(req.params.table, req.body));
+});
+
+router.put('/config/:table/:id', (req, res) => {
+  res.json(updateEntity(req.params.table, req.params.id, req.body));
+});
+
+router.delete('/config/:table/:id', (req, res) => {
+  deleteEntity(req.params.table, req.params.id);
+  res.json({ success: true });
+});
+
+// ──────────────────────────────────────
 // Sync — bulk load initial state (for frontend boot)
 // ──────────────────────────────────────
 
@@ -246,7 +277,10 @@ router.get('/sync', (_req, res) => {
     tables: getAllTables(),
     orders: getAllOrders(),
     drafts: getAllDrafts(),
-    currentShift: getCurrentShift()
+    currentShift: getCurrentShift(),
+    areas: getAllAreas(),
+    categories: getAllCategories(),
+    menuItems: getAllMenuItems(),
   });
 });
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { INITIAL_TABLES, MENU_ITEMS, generateOrderId } from '../data/mockData';
+import { generateOrderId } from '../data/mockData';
 
 // ──────────────────────────────────────
 // API helper
@@ -26,6 +26,11 @@ async function api(path, options = {}) {
 // ──────────────────────────────────────
 
 const useStore = create((set, get) => ({
+  // --- Configs (Loaded from DB) ---
+  tableAreas: [],
+  categories: [],
+  menuItems: [],
+
   // --- Server connection ---
   serverConnected: false,
   serverLoading: true,
@@ -412,8 +417,8 @@ const useStore = create((set, get) => ({
   },
 
   // --- Admin helpers ---
-  getStats: () => {
-    const orders = get().orders;
+  getStats: (filteredOrders = null) => {
+    const orders = filteredOrders || get().orders;
     const paidOrders = orders.filter(o => o.status === 'paid');
     const totalRevenue = paidOrders.reduce((sum, o) => sum + o.total, 0);
     const totalOrders = orders.length;
@@ -447,10 +452,11 @@ const useStore = create((set, get) => ({
     return { totalRevenue, totalOrders, completedOrders, paidOrders: paidOrders.length, topItems, revenueByHour, totalGuests, ordersByType };
   },
 
-  // Reset
   resetAll: () => {
-    set({ tables: INITIAL_TABLES, orders: [], drafts: [], cart: [], cartNote: '', selectedTableId: null });
-    api('/reset', { method: 'POST' }).catch(console.error);
+    set({ orders: [], drafts: [], cart: [], cartNote: '', selectedTableId: null });
+    api('/reset', { method: 'POST' })
+      .then(() => get().loadFromServer())
+      .catch(console.error);
   },
 
   // --- Boot: load from server ---
@@ -489,10 +495,15 @@ const useStore = create((set, get) => ({
         createdAt: d.created_at ?? d.createdAt,
       }));
 
-      // Map current shift
+      // Maps current shift
       const currentShift = data.currentShift;
 
-      set({ tables, orders, drafts, currentShift, serverConnected: true, serverLoading: false });
+      // Maps configs
+      const tableAreas = data.areas || [];
+      const categories = data.categories || [];
+      const menuItems = data.menuItems || [];
+
+      set({ tables, orders, drafts, currentShift, tableAreas, categories, menuItems, serverConnected: true, serverLoading: false });
       console.log('[Store] Loaded from SQLite:', tables.length, 'tables,', orders.length, 'orders,', drafts.length, 'drafts, open shift:', !!currentShift);
     } catch (err) {
       console.warn('[Store] Server not available, using defaults:', err.message);

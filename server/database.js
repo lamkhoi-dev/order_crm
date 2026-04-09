@@ -94,6 +94,29 @@ db.exec(`
     FOREIGN KEY (shift_id) REFERENCES shifts(id)
   );
 
+  CREATE TABLE IF NOT EXISTS categories (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    order_idx INTEGER DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS menu_items (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    desc TEXT,
+    price INTEGER DEFAULT 0,
+    category TEXT,
+    image TEXT,
+    popular INTEGER DEFAULT 0,
+    order_idx INTEGER DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS table_areas (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    order_idx INTEGER DEFAULT 0
+  );
+
   CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
   CREATE INDEX IF NOT EXISTS idx_orders_table ON orders(table_id);
   CREATE INDEX IF NOT EXISTS idx_drafts_table ON drafts(table_id);
@@ -107,13 +130,15 @@ try { db.exec('ALTER TABLE orders ADD COLUMN shift_id INTEGER;'); } catch (e) { 
 db.exec('CREATE INDEX IF NOT EXISTS idx_orders_shift ON orders(shift_id);');
 
 
+import { MENU_CATEGORIES, MENU_ITEMS, TABLE_AREAS } from '../src/data/mockData.js';
+
 // ──────────────────────────────────────
 // Seed default tables if empty
 // ──────────────────────────────────────
 
 function seedTables() {
   const count = db.prepare('SELECT COUNT(*) as c FROM tables').get().c;
-  if (count === 26) return;
+  if (count === 35) return;
 
   db.prepare('DELETE FROM tables').run();
 
@@ -126,13 +151,74 @@ function seedTables() {
     for (let i = 1; i <= 10; i++) insert.run(id++, `A${i}`, 4, 'A', 'empty', null, 0);
     for (let i = 1; i <= 10; i++) insert.run(id++, `B${i}`, 4, 'B', 'empty', null, 0);
     for (let i = 1; i <= 5; i++) insert.run(id++, `S${i}`, 4, 'S', 'empty', null, 0);
-    insert.run(id++, `Mang về`, 0, 'MV', 'empty', null, 0);
+    for (let i = 1; i <= 10; i++) insert.run(id++, `MV${i}`, 0, 'MV', 'empty', null, 0);
   });
   tx();
-  console.log('[DB] Seeded 26 tables for Khu A, B, S, MV');
+  console.log('[DB] Seeded 35 tables for Khu A, B, S, MV');
+}
+
+function seedAppConfig() {
+  if (db.prepare('SELECT COUNT(*) as c FROM table_areas').get().c === 0) {
+    const insertArea = db.prepare('INSERT INTO table_areas (id, name, order_idx) VALUES (?, ?, ?)');
+    db.transaction(() => {
+      TABLE_AREAS.forEach((area, i) => insertArea.run(area.id, area.name, i));
+    })();
+    console.log('[DB] Seeded table_areas');
+  }
+
+  if (db.prepare('SELECT COUNT(*) as c FROM categories').get().c === 0) {
+    const insertCat = db.prepare('INSERT INTO categories (id, name, order_idx) VALUES (?, ?, ?)');
+    db.transaction(() => {
+      MENU_CATEGORIES.forEach((cat, i) => insertCat.run(cat.id, cat.name, i));
+    })();
+    console.log('[DB] Seeded categories');
+  }
+
+  if (db.prepare('SELECT COUNT(*) as c FROM menu_items').get().c === 0) {
+    const insertItem = db.prepare('INSERT INTO menu_items (id, name, desc, price, category, image, popular, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    db.transaction(() => {
+      MENU_ITEMS.forEach((item, i) => {
+        insertItem.run(item.id, item.name, item.desc || '', item.price, item.category, item.image || '', item.popular ? 1 : 0, i);
+      });
+    })();
+    console.log('[DB] Seeded menu_items');
+  }
 }
 
 seedTables();
+seedAppConfig();
+
+// ──────────────────────────────────────
+// Config Entities CRUD (Areas, Categories, MenuItems)
+// ──────────────────────────────────────
+
+export function getAllAreas() {
+  return db.prepare('SELECT * FROM table_areas ORDER BY order_idx').all();
+}
+export function getAllCategories() {
+  return db.prepare('SELECT * FROM categories ORDER BY order_idx').all();
+}
+export function getAllMenuItems() {
+  return db.prepare('SELECT * FROM menu_items ORDER BY order_idx').all();
+}
+
+export function insertEntity(table, data) {
+  const keys = Object.keys(data);
+  const vals = Object.values(data);
+  const placeholders = keys.map(() => '?').join(',');
+  db.prepare(`INSERT INTO ${table} (${keys.join(',')}) VALUES (${placeholders})`).run(...vals);
+  return data;
+}
+export function updateEntity(table, id, data) {
+  const keys = Object.keys(data).filter(k => k !== 'id');
+  const vals = keys.map(k => data[k]);
+  const setString = keys.map(k => `${k} = ?`).join(',');
+  db.prepare(`UPDATE ${table} SET ${setString} WHERE id = ?`).run(...vals, id);
+  return { id, ...data };
+}
+export function deleteEntity(table, id) {
+  db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(id);
+}
 
 // ──────────────────────────────────────
 // Tables CRUD

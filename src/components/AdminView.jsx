@@ -1,11 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import useStore from '../store/useStore';
 import { formatCurrency, STAFF_LIST, ORDER_TYPES, RESTAURANT_INFO } from '../data/mockData';
 import {
   LayoutDashboard, Trash2, CircleDollarSign, Package, Armchair,
   TrendingUp, Users, ClipboardList, Trophy, Timer, Flame,
-  CircleCheck, Banknote, UserRound, BarChart3, Landmark
+  CircleCheck, Banknote, UserRound, BarChart3, Landmark, Lock, Calendar, Download, Settings
 } from 'lucide-react';
+import AdminSettings from './AdminSettings';
 import './AdminView.css';
 
 export default function AdminView() {
@@ -15,7 +16,58 @@ export default function AdminView() {
   const resetAll = useStore(s => s.resetAll);
   const addToast = useStore(s => s.addToast);
 
-  const stats = useMemo(() => getStats(), [orders]);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [filterType, setFilterType] = useState('all'); // all, day, month
+  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
+  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().split('-').slice(0, 2).join('-'));
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter(o => {
+      if (filterType === 'all') return true;
+      const orderDateStr = o.createdAt || o.created_at;
+      if (!orderDateStr) return false;
+      if (filterType === 'day') {
+        return orderDateStr.startsWith(filterDate);
+      }
+      if (filterType === 'month') {
+        return orderDateStr.startsWith(filterMonth);
+      }
+      return true;
+    });
+  }, [orders, filterType, filterDate, filterMonth]);
+
+  const stats = useMemo(() => getStats(filteredOrders), [filteredOrders, getStats]);
+
+  const exportExcel = () => {
+    let csv = '\uFEFF'; 
+    csv += 'ID,Ban,Thu Ngan,Gio Tao,Gio Thanh Toan,Trang Thai,Khach,Tong Tien,HT Thanh Toan,Mon\n';
+    
+    filteredOrders.forEach(o => {
+      const itemsStr = o.items.map(i => `${i.quantity}x ${i.name}`).join(' | ');
+      const row = [
+        o.id,
+        o.tableName,
+        o.staffName,
+        new Date(o.createdAt || o.created_at).toLocaleString('vi-VN'),
+        o.paidAt || o.paid_at ? new Date(o.paidAt || o.paid_at).toLocaleString('vi-VN') : '',
+        o.status,
+        o.guestCount || 0,
+        o.total,
+        o.paymentMethod || o.payment_method || '',
+        `"${itemsStr}"`
+      ];
+      csv += row.join(',') + '\n';
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    let fName = 'BaoCao_ToanBo.csv';
+    if (filterType === 'day') fName = `BaoCao_Ngay_${filterDate}.csv`;
+    if (filterType === 'month') fName = `BaoCao_Thang_${filterMonth}.csv`;
+    link.download = fName;
+    link.click();
+  };
 
   const activeTables = tables.filter(t => t.status !== 'empty').length;
 
@@ -28,15 +80,90 @@ export default function AdminView() {
 
   const maxCount = Math.max(...stats.topItems.map(i => i.count), 1);
 
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    localStorage.getItem('adminAuth') === 'true'
+  );
+  const [passInput, setPassInput] = useState('');
+
+  if (!isAuthenticated) {
+    return (
+      <div className="admin-view" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '60vh', gap: 'var(--space-4)' }}>
+        <div style={{ padding: '24px', background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '300px' }}>
+          <Lock size={40} style={{ margin: '0 auto', color: 'var(--color-primary)' }} />
+          <h3>Xác thực Quản trị</h3>
+          <input 
+            type="password" 
+            value={passInput} 
+            onChange={e => setPassInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                if (passInput === '123456') {
+                  localStorage.setItem('adminAuth', 'true');
+                  setIsAuthenticated(true);
+                } else {
+                  addToast('Sai mật khẩu!', 'error');
+                }
+              }
+            }}
+            placeholder="Nhập 123456..." 
+            style={{ padding: '10px 14px', fontSize: '16px', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--color-border)', width: '100%', outline: 'none' }}
+            autoFocus
+          />
+          <button 
+            className="btn btn--primary" 
+            onClick={() => {
+              if (passInput === '123456') {
+                localStorage.setItem('adminAuth', 'true');
+                setIsAuthenticated(true);
+              } else {
+                addToast('Sai mật khẩu!', 'error');
+              }
+            }}
+          >
+            Đăng nhập
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-view" id="admin-view">
-      <div className="admin-view__header">
+      <div className="admin-view__header" style={{ marginBottom: '10px' }}>
         <div>
-          <h2 className="section-title"><LayoutDashboard size={20} /> Dashboard</h2>
-          <span className="admin-view__subtitle">Tổng quan hoạt động · {RESTAURANT_INFO.name}</span>
+          <h2 className="section-title"><LayoutDashboard size={20} /> Ban Quản Trị</h2>
+          <span className="admin-view__subtitle">Hệ thống phân tích · {RESTAURANT_INFO.name}</span>
         </div>
-        <button className="btn btn--danger btn--sm" id="btn-reset" onClick={handleReset}>
-          <Trash2 size={14} /> Reset dữ liệu
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className={`btn ${activeTab === 'dashboard' ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setActiveTab('dashboard')}>
+            <BarChart3 size={16} /> Thống Kê
+          </button>
+          <button className={`btn ${activeTab === 'settings' ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setActiveTab('settings')}>
+            <Settings size={16} /> Cài Đặt
+          </button>
+          <button className="btn btn--danger" id="btn-reset" onClick={handleReset}>
+            <Trash2 size={16} /> Xóa Dữ Liệu
+          </button>
+        </div>
+      </div>
+      
+      {activeTab === 'settings' ? (
+        <AdminSettings />
+      ) : (
+      <>
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', background: 'var(--color-surface)', padding: '12px 20px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
+        <strong><Calendar size={18} /> Bộ Lọc:</strong>
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+          <option value="all">Tất cả thời gian</option>
+          <option value="day">Theo ngày</option>
+          <option value="month">Theo tháng</option>
+        </select>
+        
+        {filterType === 'day' && <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }} />}
+        {filterType === 'month' && <input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }} />}
+
+        <button className="btn btn--primary" onClick={exportExcel} style={{ marginLeft: 'auto' }}>
+          <Download size={16} /> Xuất Excel
         </button>
       </div>
 
@@ -197,6 +324,8 @@ export default function AdminView() {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

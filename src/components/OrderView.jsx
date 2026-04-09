@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import useStore from '../store/useStore';
-import { MENU_ITEMS, MENU_CATEGORIES, TABLE_STATUS_CONFIG, STAFF_LIST, ORDER_TYPES, TABLE_AREAS, PAYMENT_METHODS, formatCurrency } from '../data/mockData';
+import { TABLE_STATUS_CONFIG, STAFF_LIST, ORDER_TYPES, PAYMENT_METHODS, formatCurrency } from '../data/mockData';
 import { printKitchenTicket, printReceipt } from '../services/printApi';
 import {
   LayoutGrid, ClipboardList, UserRound, Search, X, Minus, Plus, Trash2,
@@ -11,6 +11,9 @@ import {
 import './OrderView.css';
 
 export default function OrderView() {
+  const tableAreas = useStore(s => s.tableAreas);
+  const categories = useStore(s => s.categories);
+  const menuItems = useStore(s => s.menuItems);
   const tables = useStore(s => s.tables);
   const selectedTableId = useStore(s => s.selectedTableId);
   const selectTable = useStore(s => s.selectTable);
@@ -55,7 +58,7 @@ export default function OrderView() {
   const canAddMore = selectedTable && selectedTable.status === 'waiting' && tableOrder;
 
   const filteredItems = useMemo(() => {
-    let items = MENU_ITEMS;
+    let items = menuItems;
     if (activeCategory === 'popular') {
       items = items.filter(m => m.popular);
     } else if (activeCategory !== 'all') {
@@ -341,7 +344,7 @@ export default function OrderView() {
                     className={`area-btn ${tableAreaFilter === 'all' ? 'area-btn--active' : ''}`}
                     onClick={() => setTableAreaFilter('all')}
                   >Tất cả</button>
-                  {TABLE_AREAS.map(area => (
+                  {tableAreas.map(area => (
                     <button
                       key={area.id}
                       className={`area-btn ${tableAreaFilter === area.id ? 'area-btn--active' : ''}`}
@@ -405,7 +408,7 @@ export default function OrderView() {
                 <div className="guest-count-bar__info">
                   <span className="guest-count-bar__table">{selectedTable.name}</span>
                   <span className="guest-count-bar__area">
-                    {TABLE_AREAS.find(a => a.id === selectedTable.area)?.name}
+                    {tableAreas.find(a => a.id === selectedTable.area)?.name}
                   </span>
                 </div>
                 <div className="guest-count-bar__input">
@@ -639,7 +642,7 @@ export default function OrderView() {
               >
                 <Flame size={13} /> Tất cả
               </button>
-              {MENU_CATEGORIES.map(cat => (
+              {categories.map(cat => (
                 <button
                   key={cat.id}
                   className={`category-tab ${activeCategory === cat.id ? 'category-tab--active' : ''}`}
