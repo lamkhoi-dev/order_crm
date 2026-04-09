@@ -15,7 +15,11 @@ class EscPos {
   constructor() { this.data = []; }
 
   raw(...bytes) { this.data.push(...bytes); return this; }
-  init() { return this.raw(0x1B, 0x40); }
+  init() {
+    return this.raw(0x1B, 0x40)  // ESC @ — Initialize
+      .raw(0x1C, 0x43, 0xFF)     // FS C 255 — Select UTF-8
+      .raw(0x1C, 0x2E);           // FS . — Enable UTF-8 mode
+  }
 
   text(str) {
     // Send as UTF-8 bytes for Vietnamese diacritics support
@@ -34,13 +38,14 @@ class EscPos {
   bold(on = true) { return this.raw(0x1B, 0x45, on ? 1 : 0); }
   size(w = 0, h = 0) { return this.raw(0x1D, 0x21, (w << 4) | h); }
 
-  line(char = '-', len = 32) { return this.println(char.repeat(len)); }
+  // 80mm printer = 48 columns normal mode
+  line(char = '-', len = 48) { return this.println(char.repeat(len)); }
 
-  tableRow(cols) {
-    const TOTAL = 32;
+  // cols param: total overridable for size modes (size 1x = 24 cols)
+  tableRow(cols, total = 48) {
     let row = '';
     for (const col of cols) {
-      const w = Math.round(col.width * TOTAL);
+      const w = Math.round(col.width * total);
       let t = String(col.text).slice(0, w);
       if (col.align === 'right') t = t.padStart(w);
       else if (col.align === 'center') {
@@ -221,13 +226,13 @@ export async function printKitchenTicket({ orderId, tableName, items, note, time
     .line('=');
 
   // Items — size 1x1 (to, bếp dễ đọc) — SL trước, Món sau
+  // size(1,1) = double width → 48/2 = 24 effective columns
   for (const item of items) {
     const name = item.name;
     const qty = String(item.quantity || 1);
-    // Dùng size 1x1 → mỗi ký tự chiếm 2 cột → max ~16 chars trên dòng 32-col
     esc.bold(true).size(1, 1);
-    // qty 2 chars + space + name
-    const line = qty.padStart(2) + ' ' + name.slice(0, 13);
+    // qty 2 chars + space + name fills remaining (24-3 = 21 chars)
+    const line = qty.padStart(2) + ' ' + name.slice(0, 21);
     esc.println(line);
     esc.size(0, 0).bold(false);
   }
@@ -257,6 +262,7 @@ export async function printKitchenTicket({ orderId, tableName, items, note, time
 export async function printReceipt({ orderId, tableName, items, total, paymentMethod, time, staffName }) {
   const now = new Date();
   const timeStr = time || now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const fmt = n => new Intl.NumberFormat('vi-VN').format(n) + 'd';
 
   const esc = new EscPos();
@@ -269,27 +275,28 @@ export async function printReceipt({ orderId, tableName, items, total, paymentMe
     .println('Tel: 0901 681 567')
     .line()
     .alignLeft()
-    .println(`Đơn: ${orderId}  |  ${timeStr}`)
+    .println(`Đơn: ${orderId}`)
+    .println(`Ngày: ${dateStr}  |  ${timeStr}`)
     .println(`Bàn: ${tableName || 'N/A'}`)
 
   if (staffName) esc.println(`NV: ${staffName}`);
   esc.line();
 
-  // Table header (SL trước)
+  // Table header — 48 cols: SL(5) + Món(24) + Thành tiền(19)
   esc.bold(true)
     .tableRow([
       { text: 'SL', width: 0.1, align: 'center' },
-      { text: 'Món', width: 0.5, align: 'left' },
-      { text: 'T.Tiền', width: 0.4, align: 'right' },
+      { text: 'Món', width: 0.52, align: 'left' },
+      { text: 'Thành tiền', width: 0.38, align: 'right' },
     ])
     .bold(false).line();
 
-  // Items (SL trước)
+  // Items
   for (const item of items) {
     esc.tableRow([
       { text: String(item.quantity || 1), width: 0.1, align: 'center' },
-      { text: item.name, width: 0.5, align: 'left' },
-      { text: fmt((item.price || 0) * (item.quantity || 1)), width: 0.4, align: 'right' },
+      { text: item.name, width: 0.52, align: 'left' },
+      { text: fmt((item.price || 0) * (item.quantity || 1)), width: 0.38, align: 'right' },
     ]);
   }
 
