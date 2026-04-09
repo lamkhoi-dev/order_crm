@@ -1,0 +1,14 @@
+{
+  "name": "order-crm-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  }
+}

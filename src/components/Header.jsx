@@ -1,6 +1,8 @@
 import useStore from '../store/useStore';
 import { RESTAURANT_INFO } from '../data/mockData';
-import { Utensils, ChefHat, BarChart3 } from 'lucide-react';
+import { Utensils, ChefHat, BarChart3, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import ShiftManager from './ShiftManager';
 import './Header.css';
 
 const ROLES = [
@@ -13,6 +15,8 @@ export default function Header() {
   const role = useStore(s => s.role);
   const setRole = useStore(s => s.setRole);
   const orders = useStore(s => s.orders);
+  const currentShift = useStore(s => s.currentShift);
+  const [showShiftModal, setShowShiftModal] = useState(false);
 
   const pendingKitchen = orders.filter(o => o.status === 'pending' || o.status === 'cooking').length;
   const doneOrders = orders.filter(o => o.status === 'done').length;
@@ -48,10 +52,19 @@ export default function Header() {
       </nav>
 
       <div className="header__meta">
+        <button 
+          className={`header__shift-btn ${currentShift ? 'active' : ''}`}
+          onClick={() => setShowShiftModal(true)}
+        >
+          <Clock size={16} />
+          <span>{currentShift ? `Đang mở: ${currentShift.name}` : 'Chưa mở ca'}</span>
+        </button>
         <span className="header__time" id="header-time">
           {new Date().toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'short' })}
         </span>
       </div>
+
+      {showShiftModal && <ShiftManager onClose={() => setShowShiftModal(false)} />}
     </header>
   );
 }

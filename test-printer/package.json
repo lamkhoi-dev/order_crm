@@ -1,0 +1,15 @@
+{
+  "name": "xprinter-test",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Test Xprinter XP-80C qua USB - Khong can native module",
+  "scripts": {
+    "test": "node test-connection.js",
+    "print": "node test-print.js",
+    "custom": "node test-custom.js",
+    "web": "node web-test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}

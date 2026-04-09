@@ -4,47 +4,51 @@
 
 /* --- CSS Variables --- */
 :root {
-  /* Color Palette - Warm F&B Inspired */
-  --color-bg: #F7F4F0;
-  --color-bg-secondary: #EFEBE6;
+  /* Color Palette - CukCuk-inspired Blue + High Contrast */
+  --color-bg: #E8ECF0;
+  --color-bg-secondary: #DDE2E8;
   --color-surface: #FFFFFF;
-  --color-surface-hover: #FBF9F7;
-  --color-surface-active: #F3EFEB;
+  --color-surface-hover: #F4F6F8;
+  --color-surface-active: #E8ECF0;
 
-  --color-primary: #D4654A;
-  --color-primary-hover: #C05A42;
-  --color-primary-light: #FDEEE9;
-  --color-primary-subtle: #F5D3CA;
+  --color-primary: #2B7FD4;
+  --color-primary-hover: #2068B3;
+  --color-primary-light: #E0EEFA;
+  --color-primary-subtle: #B0D0F0;
 
-  --color-accent: #2B7A5F;
-  --color-accent-hover: #236850;
-  --color-accent-light: #E0F2EC;
+  --color-accent: #1E8A5F;
+  --color-accent-hover: #16704D;
+  --color-accent-light: #D4F0E4;
 
-  --color-warning: #E8A838;
-  --color-warning-light: #FFF5E0;
-  --color-danger: #D94452;
-  --color-danger-light: #FDE8EA;
-  --color-info: #4A8CC9;
-  --color-info-light: #E5F0FB;
+  --color-warning: #D49520;
+  --color-warning-light: #FFF3D8;
+  --color-danger: #D63B4A;
+  --color-danger-light: #FDE2E5;
+  --color-info: #2B7FD4;
+  --color-info-light: #E0EEFA;
 
-  --color-text: #2C2420;
-  --color-text-secondary: #7A6E66;
-  --color-text-muted: #A69B93;
+  --color-text: #1A2030;
+  --color-text-secondary: #4A5568;
+  --color-text-muted: #6B7A8D;
   --color-text-inverse: #FFFFFF;
 
-  --color-border: #E5DDD6;
-  --color-border-light: #F0ECE7;
-  --color-divider: #EDE8E3;
+  --color-border: #C5CED8;
+  --color-border-light: #DDE2E8;
+  --color-divider: #D2D9E0;
 
-  /* Table Status Colors */
-  --table-empty: #E8E3DD;
-  --table-empty-text: #8A8078;
-  --table-ordering: #FFF0CC;
-  --table-ordering-border: #E8A838;
-  --table-waiting: #FDEEE9;
-  --table-waiting-border: #D4654A;
-  --table-served: #E0F2EC;
-  --table-served-border: #2B7A5F;
+  /* Header / Nav - Dark navy */
+  --color-header-bg: #1B3A5C;
+  --color-header-text: #FFFFFF;
+
+  /* Table Status Colors - Higher Contrast */
+  --table-empty: #D2D9E0;
+  --table-empty-text: #5A6878;
+  --table-ordering: #FFF0C8;
+  --table-ordering-border: #D49520;
+  --table-waiting: #E0EEFA;
+  --table-waiting-border: #2B7FD4;
+  --table-served: #D4F0E4;
+  --table-served-border: #1E8A5F;
 
   /* Typography */
   --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -79,11 +83,11 @@
   --radius-full: 9999px;
 
   /* Shadows */
-  --shadow-xs: 0 1px 2px rgba(44, 36, 32, 0.04);
-  --shadow-sm: 0 2px 6px rgba(44, 36, 32, 0.06);
-  --shadow-md: 0 4px 12px rgba(44, 36, 32, 0.08);
-  --shadow-lg: 0 8px 24px rgba(44, 36, 32, 0.10);
-  --shadow-xl: 0 12px 40px rgba(44, 36, 32, 0.14);
+  --shadow-xs: 0 1px 2px rgba(20, 30, 48, 0.06);
+  --shadow-sm: 0 2px 6px rgba(20, 30, 48, 0.08);
+  --shadow-md: 0 4px 12px rgba(20, 30, 48, 0.10);
+  --shadow-lg: 0 8px 24px rgba(20, 30, 48, 0.12);
+  --shadow-xl: 0 12px 40px rgba(20, 30, 48, 0.16);
 
   /* Transitions */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);

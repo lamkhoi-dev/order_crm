@@ -818,7 +818,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(44, 36, 32, 0.5);
+  background: rgba(20, 36, 56, 0.55);
   z-index: var(--z-modal);
   display: flex;
   align-items: center;
@@ -875,7 +875,7 @@
 
 .payment-items__header {
   display: grid;
-  grid-template-columns: 1fr 40px 90px;
+  grid-template-columns: 1fr 40px 90px 32px;
   gap: var(--space-2);
   padding: var(--space-2) 0;
   font-size: var(--text-xs);
@@ -888,16 +888,37 @@
 
 .payment-item {
   display: grid;
-  grid-template-columns: 1fr 40px 90px;
+  grid-template-columns: 1fr 40px 90px 32px;
   gap: var(--space-2);
   padding: var(--space-2) 0;
   font-size: var(--text-sm);
   border-bottom: 1px solid var(--color-divider);
+  align-items: center;
 }
 
-.payment-item__name { color: var(--color-text); }
+.payment-item__name { color: var(--color-text); font-weight: 500; }
 .payment-item__qty { text-align: center; font-weight: 600; }
 .payment-item__price { font-weight: 600; color: var(--color-text); text-align: right; }
+
+.payment-item__delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  border: none;
+}
+
+.payment-item__delete:active {
+  transform: scale(0.9);
+  background: var(--color-danger);
+  color: white;
+}
 
 .payment-total {
   display: flex;
@@ -972,6 +993,80 @@
   color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 180, 100, 60), 0.15);
 }
+
+/* --- Admin Password Modal --- */
+.admin-pass-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 380px;
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  animation: scaleIn var(--duration-normal) var(--ease-out);
+}
+
+.admin-pass-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.admin-pass-modal__header h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--color-danger);
+}
+
+.admin-pass-modal__body {
+  padding: var(--space-5);
+}
+
+.admin-pass-modal__msg {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+  line-height: 1.5;
+}
+
+.admin-pass-modal__label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-2);
+}
+
+.admin-pass-modal__input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.admin-pass-modal__input:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px rgba(196, 48, 62, 0.15);
+}
+
+.admin-pass-modal__actions {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--color-divider);
+}
+
+.admin-pass-modal__actions .btn { flex: 1; }
 
 /* --- Order List View --- */
 .order-list-view {

@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
 import useStore from '../store/useStore';
 import { MENU_ITEMS, MENU_CATEGORIES, TABLE_STATUS_CONFIG, STAFF_LIST, ORDER_TYPES, TABLE_AREAS, PAYMENT_METHODS, formatCurrency } from '../data/mockData';
+import { printKitchenTicket, printReceipt } from '../services/printApi';
 import {
   LayoutGrid, ClipboardList, UserRound, Search, X, Minus, Plus, Trash2,
   ShoppingCart, Send, Save, CircleDollarSign, Banknote, Clock, PencilLine,
   Users, ChevronDown, CircleCheck, Flame, Timer, PlusCircle, Utensils,
-  ArrowUpFromLine, Landmark
+  ArrowUpFromLine, Landmark, Lock
 } from 'lucide-react';
 import './OrderView.css';
 
@@ -34,6 +35,7 @@ export default function OrderView() {
   const loadDraft = useStore(s => s.loadDraft);
   const deleteDraft = useStore(s => s.deleteDraft);
   const addItemsToOrder = useStore(s => s.addItemsToOrder);
+  const removeItemFromOrder = useStore(s => s.removeItemFromOrder);
 
   const [activeCategory, setActiveCategory] = useState('all');
   const [showCart, setShowCart] = useState(false);
@@ -43,6 +45,8 @@ export default function OrderView() {
   const [orderTab, setOrderTab] = useState('dine_in');
   const [showOrderList, setShowOrderList] = useState(false);
   const [tableAreaFilter, setTableAreaFilter] = useState('all');
+  const [adminPassInput, setAdminPassInput] = useState('');
+  const [pendingDeleteItem, setPendingDeleteItem] = useState(null); // { orderId, itemIndex, itemName }
 
   const selectedTable = tables.find(t => t.id === selectedTableId);
   const tableOrder = selectedTable?.orderId
@@ -89,11 +93,37 @@ export default function OrderView() {
     if (!cart.length) { addToast('Vui lòng chọn món!', 'warning'); return; }
     if (canAddMore && tableOrder) {
       const ok = addItemsToOrder(tableOrder.id);
-      if (ok) { addToast(`Đã thêm món vào đơn ${tableOrder.id}!`, 'success'); setShowCart(false); }
+      if (ok) {
+        addToast(`Đã thêm món vào đơn ${tableOrder.id}!`, 'success');
+        setShowCart(false);
+        // In phiếu bếp cho món mới thêm
+        printKitchenTicket({
+          orderId: tableOrder.id + ' (THÊM)',
+          tableName: selectedTable.name,
+          items: cart,
+          note: cartNote,
+          staffName: staffName(selectedStaffId),
+        });
+      }
       return;
     }
+    const currentCart = [...cart];
+    const currentNote = cartNote;
+    const currentTableName = selectedTable.name;
+    const currentStaffName = staffName(selectedStaffId);
     const orderId = sendOrderToKitchen();
-    if (orderId) { addToast(`Đã gửi đơn ${orderId} cho bếp!`, 'success'); setShowCart(false); }
+    if (orderId) {
+      addToast(`Đã gửi đơn ${orderId} cho bếp!`, 'success');
+      setShowCart(false);
+      // Auto in phiếu bếp
+      printKitchenTicket({
+        orderId,
+        tableName: currentTableName,
+        items: currentCart,
+        note: currentNote,
+        staffName: currentStaffName,
+      });
+    }
   };
 
   const handleSaveDraft = () => {
@@ -105,10 +135,24 @@ export default function OrderView() {
 
   const handlePay = (orderId) => {
     const methodLabel = PAYMENT_METHODS.find(m => m.id === paymentMethod)?.label || 'Tiền mặt';
+    // Lưu thông tin trước khi payOrder clear state
+    const order = orders.find(o => o.id === orderId);
+    const payData = order ? {
+      orderId,
+      tableName: order.tableName,
+      items: order.items,
+      total: order.total,
+      paymentMethod,
+      staffName: staffName(order.staffId),
+    } : null;
+
     payOrder(orderId, paymentMethod);
     addToast(`Thanh toán ${methodLabel} thành công!`, 'success');
     setShowPayment(false);
     setPaymentMethod('cash');
+
+    // Auto in hóa đơn
+    if (payData) printReceipt(payData);
   };
 
   const handleAddToCart = (itemId) => {
@@ -415,6 +459,13 @@ export default function OrderView() {
                         <span className="payment-item__name">{item.name}</span>
                         <span className="payment-item__qty">{item.quantity}</span>
                         <span className="payment-item__price">{formatCurrency(item.price * item.quantity)}</span>
+                        <button
+                          className="payment-item__delete"
+                          title="Xoá món (cần mật khẩu admin)"
+                          onClick={() => setPendingDeleteItem({ orderId: tableOrder.id, itemIndex: i, itemName: item.name })}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -447,6 +498,66 @@ export default function OrderView() {
                   <button className="btn btn--primary btn--lg" id="btn-pay" onClick={() => handlePay(tableOrder.id)}>
                     {paymentMethod === 'cash' ? <Banknote size={18} /> : <Landmark size={18} />}
                     Xác nhận thanh toán
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Admin Password Modal for item removal */}
+          {pendingDeleteItem && (
+            <div className="modal-overlay" onClick={() => { setPendingDeleteItem(null); setAdminPassInput(''); }}>
+              <div className="admin-pass-modal" onClick={e => e.stopPropagation()}>
+                <div className="admin-pass-modal__header">
+                  <h3><Lock size={18} /> Xác nhận xoá món</h3>
+                  <button className="modal-close" onClick={() => { setPendingDeleteItem(null); setAdminPassInput(''); }}><X size={16} /></button>
+                </div>
+                <div className="admin-pass-modal__body">
+                  <p className="admin-pass-modal__msg">
+                    Xoá <strong>{pendingDeleteItem.itemName}</strong> khỏi đơn hàng?
+                  </p>
+                  <label className="admin-pass-modal__label">Mật khẩu Admin</label>
+                  <input
+                    type="password"
+                    className="admin-pass-modal__input"
+                    placeholder="Nhập mật khẩu..."
+                    value={adminPassInput}
+                    onChange={e => setAdminPassInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        if (adminPassInput === 'admin123') {
+                          removeItemFromOrder(pendingDeleteItem.orderId, pendingDeleteItem.itemIndex);
+                          addToast(`Đã xoá: ${pendingDeleteItem.itemName}`, 'info');
+                          setPendingDeleteItem(null);
+                          setAdminPassInput('');
+                          // close payment if order was deleted entirely
+                          const orderStillExists = orders.find(o => o.id === pendingDeleteItem.orderId);
+                          if (!orderStillExists || orderStillExists.items?.length <= 1) setShowPayment(false);
+                        } else {
+                          addToast('Sai mật khẩu!', 'warning');
+                          setAdminPassInput('');
+                        }
+                      }
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <div className="admin-pass-modal__actions">
+                  <button className="btn btn--secondary" onClick={() => { setPendingDeleteItem(null); setAdminPassInput(''); }}>Huỷ</button>
+                  <button className="btn btn--danger" onClick={() => {
+                    if (adminPassInput === 'admin123') {
+                      removeItemFromOrder(pendingDeleteItem.orderId, pendingDeleteItem.itemIndex);
+                      addToast(`Đã xoá: ${pendingDeleteItem.itemName}`, 'info');
+                      setPendingDeleteItem(null);
+                      setAdminPassInput('');
+                      const orderStillExists = orders.find(o => o.id === pendingDeleteItem.orderId);
+                      if (!orderStillExists || orderStillExists.items?.length <= 1) setShowPayment(false);
+                    } else {
+                      addToast('Sai mật khẩu!', 'warning');
+                      setAdminPassInput('');
+                    }
+                  }}>
+                    <Trash2 size={16} /> Xác nhận xoá
                   </button>
                 </div>
               </div>
