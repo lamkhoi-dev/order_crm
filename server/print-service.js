@@ -40,6 +40,61 @@ class EscPos {
   // 80mm printer = 48 columns normal mode
   line(char = '-', len = 48) { return this.println(char.repeat(len)); }
 
+  // PC437 Box Drawing grid helpers for solid lines
+  cp437() { return this.raw(0x1B, 0x74, 0); }
+  cp1258() { return this.raw(0x1B, 0x74, 27); }
+
+  gridTop(widths) {
+    this.cp437().raw(0xDA); // ┌
+    for (let i=0; i<widths.length; i++) {
+      for(let j=0; j<widths[i]; j++) this.raw(0xC4); // ─
+      if (i < widths.length - 1) this.raw(0xC2); // ┬
+    }
+    return this.raw(0xBF).newLine().cp1258(); // ┐
+  }
+
+  gridMid(widths) {
+    this.cp437().raw(0xC3); // ├
+    for (let i=0; i<widths.length; i++) {
+      for(let j=0; j<widths[i]; j++) this.raw(0xC4); // ─
+      if (i < widths.length - 1) this.raw(0xC5); // ┼
+    }
+    return this.raw(0xB4).newLine().cp1258(); // ┤
+  }
+
+  gridBot(widths) {
+    this.cp437().raw(0xC0); // └
+    for (let i=0; i<widths.length; i++) {
+      for(let j=0; j<widths[i]; j++) this.raw(0xC4); // ─
+      if (i < widths.length - 1) this.raw(0xC1); // ┴
+    }
+    return this.raw(0xD9).newLine().cp1258(); // ┘
+  }
+
+  gridRow(widths, texts, aligns) {
+    this.cp437().raw(0xB3).cp1258(); // │
+    for (let i=0; i<widths.length; i++) {
+      const w = widths[i];
+      let t = String(texts[i] || '');
+      const safeT = t.slice(0, w);
+      
+      if (aligns && aligns[i] === 'right') {
+         this.text(' '.repeat(Math.max(0, w - safeT.length)) + safeT);
+      } else if (aligns && aligns[i] === 'center') {
+         const spL = Math.floor((w - safeT.length) / 2);
+         const spR = w - safeT.length - spL;
+         this.text(' '.repeat(Math.max(0, spL)) + safeT + ' '.repeat(Math.max(0, spR)));
+      } else {
+         // left
+         if (safeT.startsWith(' ')) this.text(safeT + ' '.repeat(Math.max(0, w - safeT.length)));
+         else this.text(' ' + safeT + ' '.repeat(Math.max(0, w - safeT.length - 1)));
+      }
+      this.cp437().raw(0xB3).cp1258(); // │
+    }
+    return this.newLine();
+  }
+
+  // Plain table row (no borders)
   tableRow(cols, total = 48) {
     let row = '';
     for (const col of cols) {
@@ -178,20 +233,13 @@ export async function printKitchenTicket({ orderId, tableName, items, note, time
   const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const timeStr = time || now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
-  // Bordered table widths for 24 effective columns (font size 1x1 = double width)
-  // | SL | Tên món         | -> 1 + 3 + 1 + 16 + 1 = 22 columns
-  const kSL = 3;
-  const kName = 17;
-  const kBorder = '+' + '-'.repeat(kSL) + '+' + '-'.repeat(kName) + '+';
-  const kRow = (sl, name) => '|' + padLeft(sl, kSL) + '|' + padRight(' ' + name, kName) + '|';
-
   const esc = new EscPos();
   esc.init()
     .beep(3, 3)
 
     // Header
     .alignCenter()
-    .bold(true).size(2, 2) // Quadruple size
+    .bold(true).size(1, 1) // Double size instead of quad
     .println('CHẾ BIẾN')
     .size(0, 0).bold(false)
     .newLine()
@@ -213,20 +261,24 @@ export async function printKitchenTicket({ orderId, tableName, items, note, time
     .size(0, 0)
     .newLine()
 
-    // Bordered Table
+    // Bordered Table Header
     .bold(true).size(1, 1) // 24 columns mode for table
-    .println(kBorder)
-    .println(kRow('SL', 'Tên món'))
-    .bold(false)
-    .println(kBorder);
+    .gridTop([3, 18])
+    .gridRow([3, 18], ['SL', 'Tên món'], ['center', 'left'])
+    .gridMid([3, 18])
+    .bold(false);
 
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     const sl = String(item.quantity || 1);
-    const name = item.name.slice(0, kName - 1);
-    esc.println(kRow(sl, name));
+    const name = item.name.slice(0, 18 - 1);
+    esc.gridRow([3, 18], [sl, name], ['center', 'left']);
+    if (i < items.length - 1) {
+       esc.gridMid([3, 18]); // Horizontal line between items
+    }
   }
   
-  esc.println(kBorder).size(0, 0);
+  esc.gridBot([3, 18]).size(0, 0);
 
   if (note && note.trim()) {
     esc.bold(true).size(1, 0)
@@ -253,14 +305,6 @@ export async function printReceipt({ orderId, tableName, items, total, paymentMe
   const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const fmt = n => new Intl.NumberFormat('vi-VN').format(n) + 'đ';
 
-  // Bordered table widths for 48 columns
-  // | SL | Tên món              |     Thành tiền | -> 1 + 4 + 1 + 22 + 1 + 18 + 1 = 48
-  const W1 = 4, W2 = 22, W3 = 18;
-  const border = '+' + '-'.repeat(W1) + '+' + '-'.repeat(W2) + '+' + '-'.repeat(W3) + '+';
-  const brow = (sl, name, price) => {
-    return '|' + padLeft(sl, W1) + '|' + padRight(' ' + name, W2) + '|' + padLeft(price, W3) + '|';
-  };
-
   const esc = new EscPos();
   esc.init()
     .alignCenter().bold(true).size(1, 1)
@@ -277,21 +321,22 @@ export async function printReceipt({ orderId, tableName, items, total, paymentMe
 
   if (staffName) esc.println('NV: ' + staffName);
 
-  // Bordered table
-  esc.println(border);
+  // Bordered table header
+  esc.gridTop([4, 22, 18]);
   esc.bold(true);
-  esc.println(brow('SL ', 'Tên món', 'Thành tiền '));
+  esc.gridRow([4, 22, 18], ['SL', 'Tên món', 'Thành tiền'], ['center', 'left', 'right']);
   esc.bold(false);
-  esc.println(border);
+  esc.gridMid([4, 22, 18]);
 
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     const sl = String(item.quantity || 1);
-    const name = item.name.slice(0, W2 - 1);
+    const name = item.name.slice(0, 22 - 1);
     const price = fmt((item.price || 0) * (item.quantity || 1));
-    esc.println(brow(sl, name, price));
+    esc.gridRow([4, 22, 18], [sl, name, price], ['center', 'left', 'right']);
   }
 
-  esc.println(border);
+  esc.gridBot([4, 22, 18]);
 
   // Total
   esc.newLine()
