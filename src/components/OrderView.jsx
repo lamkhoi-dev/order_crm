@@ -6,7 +6,7 @@ import {
   LayoutGrid, ClipboardList, UserRound, Search, X, Minus, Plus, Trash2,
   ShoppingCart, Send, Save, CircleDollarSign, Banknote, Clock, PencilLine,
   Users, ChevronDown, CircleCheck, Flame, Timer, PlusCircle, Utensils,
-  ArrowUpFromLine, Landmark, Lock
+  ArrowUpFromLine, Landmark, Lock, Printer
 } from 'lucide-react';
 import './OrderView.css';
 
@@ -164,6 +164,21 @@ export default function OrderView() {
 
     // Tùy chọn in hóa đơn
     if (payData && printReceiptOnPay) printReceipt(payData);
+  };
+
+  const handlePrePrint = (orderId) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    const payData = {
+      orderId,
+      tableName: order.tableName,
+      items: order.items,
+      total: order.total,
+      paymentMethod: 'temp',
+      staffName: staffName(order.staffId),
+    };
+    printReceipt(payData);
+    addToast('Đã in phiếu tạm tính!', 'info');
   };
 
   const handleAddToCart = (itemId) => {
@@ -506,20 +521,22 @@ export default function OrderView() {
                       <span>SL</span>
                       <span>Thành tiền</span>
                     </div>
-                    {tableOrder.items.map((item, i) => (
-                      <div key={i} className="payment-item">
-                        <span className="payment-item__name">{item.name}</span>
-                        <span className="payment-item__qty">{item.quantity}</span>
-                        <span className="payment-item__price">{formatCurrency(item.price * item.quantity)}</span>
-                        <button
-                          className="payment-item__delete"
-                          title="Xoá món (cần mật khẩu admin)"
-                          onClick={() => setPendingDeleteItem({ orderId: tableOrder.id, itemIndex: i, itemName: item.name })}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
+                    <div style={{ maxHeight: '35vh', overflowY: 'auto', paddingRight: '5px' }}>
+                      {tableOrder.items.map((item, i) => (
+                        <div key={i} className="payment-item">
+                          <span className="payment-item__name">{item.name}</span>
+                          <span className="payment-item__qty">{item.quantity}</span>
+                          <span className="payment-item__price">{formatCurrency(item.price * item.quantity)}</span>
+                          <button
+                            className="payment-item__delete"
+                            title="Xoá món (cần mật khẩu admin)"
+                            onClick={() => setPendingDeleteItem({ orderId: tableOrder.id, itemIndex: i, itemName: item.name })}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <div className="payment-total">
                     <span>Tổng cộng</span>
@@ -544,15 +561,20 @@ export default function OrderView() {
                       <span>Chuyển khoản</span>
                     </button>
                   </div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '15px', cursor: 'pointer', userSelect: 'none' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={printReceiptOnPay} 
-                      onChange={() => setPrintReceiptOnPay(!printReceiptOnPay)} 
-                      style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
-                    />
-                    <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-text)' }}>In hoá đơn sau khi thanh toán</span>
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={printReceiptOnPay} 
+                        onChange={() => setPrintReceiptOnPay(!printReceiptOnPay)} 
+                        style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                      />
+                      <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-text)' }}>In bill khi thu tiền</span>
+                    </label>
+                    <button className="btn btn--secondary btn--sm" style={{ padding: '0 12px' }} onClick={() => handlePrePrint(tableOrder.id)}>
+                      <Printer size={14} /> In tạm
+                    </button>
+                  </div>
                 </div>
                 <div className="payment-modal__actions">
                   <div style={{ display: 'flex', gap: 'var(--space-2)', flex: 1 }}>

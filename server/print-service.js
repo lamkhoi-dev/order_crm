@@ -355,7 +355,7 @@ export async function printReceipt({ orderId, tableName, items, total, paymentMe
       { text: fmt(total), width: 0.5, align: 'right' },
     ])
     .size(0, 0).bold(false)
-    .println('TT: ' + (paymentMethod === 'transfer' ? 'Chuyen khoan' : 'Tien mat'))
+    .println(paymentMethod === 'temp' ? 'TAM TINH (CHUA THANH TOAN)' : 'TT: ' + (paymentMethod === 'transfer' ? 'Chuyen khoan' : 'Tien mat'))
     .line()
     .alignCenter()
     .println('Cam on quy khach!')
