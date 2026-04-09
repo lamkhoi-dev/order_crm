@@ -251,7 +251,8 @@ router.get('/config/:table', (req, res) => {
   const { table } = req.params;
   const data = (table === 'table_areas') ? getAllAreas() : 
                (table === 'categories') ? getAllCategories() : 
-               (table === 'menu_items') ? getAllMenuItems() : [];
+               (table === 'menu_items') ? getAllMenuItems() : 
+               (table === 'tables') ? getAllTables() : [];
   res.json(data);
 });
 

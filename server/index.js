@@ -6,7 +6,13 @@
 import express from 'express';
 import cors from 'cors';
 import dataApi from './api.js';
+import multer from 'multer';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { printKitchenTicket, printReceipt, printShiftReport, testPrinter } from './print-service.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -19,6 +25,29 @@ app.use(express.json());
 // ──────────────────────────────────────
 
 app.use('/api/data', dataApi);
+
+// ──────────────────────────────────────
+// Upload API (Multer)
+// ──────────────────────────────────────
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, join(__dirname, '../public/images'));
+  },
+  filename: function (req, file, cb) {
+    const ext = file.originalname.split('.').pop() || 'png';
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'upload-' + uniqueSuffix + '.' + ext);
+  }
+});
+const upload = multer({ storage: storage });
+
+app.post('/api/upload', upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  res.json({ url: '/images/' + req.file.filename });
+});
 
 // ──────────────────────────────────────
 // Print API (Xprinter)
