@@ -376,8 +376,13 @@ export default function OrderView() {
                     className={`table-card table-card--${cfg.color} ${isSelected ? 'table-card--selected' : ''}`}
                     onClick={() => {
                       selectTable(t.id);
-                      if (t.status === 'served') setShowPayment(true);
-                      else setShowPayment(false);
+                      if (t.status === 'served') {
+                        setShowPayment(true);
+                      } else {
+                        setShowPayment(false);
+                        const menuEl = document.getElementById('menu-section');
+                        if (menuEl) menuEl.scrollIntoView({ behavior: 'smooth' });
+                      }
                     }}
                   >
                     <span className="table-card__icon">{cfg.icon}</span>

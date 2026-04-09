@@ -32,6 +32,8 @@ class EscPos {
 
   bold(on = true) { return this.raw(0x1B, 0x45, on ? 1 : 0); }
   italic(on = true) { return this.raw(0x1B, on ? 0x34 : 0x35); }
+  underline(on = true) { return this.raw(0x1B, 0x2D, on ? 1 : 0); }
+  invert(on = true) { return this.raw(0x1D, 0x42, on ? 1 : 0); }
   size(w = 0, h = 0) { return this.raw(0x1D, 0x21, (w << 4) | h); }
 
   // 80mm printer = 48 columns normal mode
@@ -288,10 +290,10 @@ export async function printKitchenTicket({ orderId, tableName, items, note, time
     esc.size(0, 0).bold(false);
 
     if (item.note) {
-      esc.bold(true).italic(true).size(0, 1); // Note is bold, italic, and double height!
+      esc.bold(true).underline(true).size(0, 1); // Use underline instead of italic for compatibility
       const noteStr = d(item.note).slice(0, 39 - 6);
-      esc.gridRow([4, 39], [' ', '>> * ' + noteStr + ' *'], ['center', 'left']);
-      esc.italic(false).size(0, 0).bold(false);
+      esc.gridRow([4, 39], [' ', '>> ' + noteStr], ['center', 'left']);
+      esc.underline(false).size(0, 0).bold(false);
     }
     
     if (i < items.length - 1) {
