@@ -656,6 +656,18 @@
   display: block;
 }
 
+.cart-item__note-input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
 .cart-item__price {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
