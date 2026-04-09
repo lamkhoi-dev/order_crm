@@ -55,7 +55,7 @@ export default function OrderView() {
     ? orders.find(o => o.id === selectedTable.orderId)
     : null;
 
-  const canAddMore = selectedTable && selectedTable.status === 'waiting' && tableOrder;
+  const canAddMore = selectedTable && (selectedTable.status === 'waiting' || selectedTable.status === 'served') && tableOrder;
 
   const filteredItems = useMemo(() => {
     let items = menuItems;
@@ -546,10 +546,19 @@ export default function OrderView() {
                   </div>
                 </div>
                 <div className="payment-modal__actions">
-                  <button className="btn btn--secondary" onClick={() => setShowPayment(false)}>Huỷ bỏ</button>
-                  <button className="btn btn--primary btn--lg" id="btn-pay" onClick={() => handlePay(tableOrder.id)}>
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', flex: 1 }}>
+                    <button className="btn btn--secondary" style={{ flex: 1, padding: '0 10px' }} onClick={() => setShowPayment(false)}>Đóng</button>
+                    <button className="btn btn--secondary" style={{ flex: 1, padding: '0 10px', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }} onClick={() => {
+                      setShowPayment(false);
+                      const menuEl = document.getElementById('menu-section');
+                      if (menuEl) menuEl.scrollIntoView({ behavior: 'smooth' });
+                    }}>
+                      <PlusCircle size={16} style={{ marginRight: '4px' }} /> Món
+                    </button>
+                  </div>
+                  <button className="btn btn--primary btn--lg" id="btn-pay" style={{ flex: 1, padding: '0' }} onClick={() => handlePay(tableOrder.id)}>
                     {paymentMethod === 'cash' ? <Banknote size={18} /> : <Landmark size={18} />}
-                    Xác nhận thanh toán
+                    Thu tiền
                   </button>
                 </div>
               </div>
