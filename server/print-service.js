@@ -271,23 +271,23 @@ export async function printKitchenTicket({ orderId, tableName, items, note, time
     .newLine()
 
     // Bordered Table Header
-    .bold(true).size(1, 1) // 24 columns mode for table
-    .gridTop([3, 18])
-    .gridRow([3, 18], ['SL', 'Ten mon'], ['center', 'left'])
-    .gridMid([3, 18])
+    .bold(true).size(0, 0) // Normal size, 48 columns mode
+    .gridTop([4, 39])
+    .gridRow([4, 39], ['SL', 'Ten mon'], ['center', 'left'])
+    .gridMid([4, 39])
     .bold(false);
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     const sl = String(item.quantity || 1);
-    const name = d(item.name).slice(0, 18 - 1);
-    esc.gridRow([3, 18], [sl, name], ['center', 'left']);
+    const name = d(item.name).slice(0, 39 - 1);
+    esc.gridRow([4, 39], [sl, name], ['center', 'left']);
     if (i < items.length - 1) {
-       esc.gridMid([3, 18]); // Horizontal line between items
+       esc.gridMid([4, 39]); // Horizontal line between items
     }
   }
   
-  esc.gridBot([3, 18]).size(0, 0);
+  esc.gridBot([4, 39]).size(0, 0);
 
   if (note && note.trim()) {
     esc.bold(true).size(1, 0)
@@ -317,13 +317,6 @@ export async function printReceipt({ orderId, tableName, items, total, paymentMe
 
   const esc = new EscPos();
   esc.init()
-    .alignCenter().bold(true).size(1, 1)
-    .println('HA NOI XUA')
-    .size(0, 0).bold(false)
-    .println('Bun rieu - Bun dau')
-    .println('220 Nguyen Hoang, An Phu, Thu Duc')
-    .println('Tel: 0901 681 567')
-    .line()
     .alignLeft()
     .println('Don: ' + orderId)
     .println('Ngay: ' + dateStr + '  |  ' + timeStr)
