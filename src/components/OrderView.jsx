@@ -167,11 +167,10 @@ export default function OrderView() {
 
   const handleAddToCart = (itemId) => {
     if (!selectedTableId) { addToast('Chọn bàn trước!', 'warning'); return; }
-    if (selectedTable?.status === 'served') { addToast('Bàn này đã ra món, vui lòng thanh toán!', 'warning'); return; }
     addToCart(itemId);
   };
 
-  const canOrder = selectedTableId && selectedTable?.status !== 'served';
+  const canOrder = selectedTableId != null;
   const servedOrders = orders.filter(o => o.status === 'done');
 
   const activeOrders = useMemo(() => {
