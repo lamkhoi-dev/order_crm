@@ -18,7 +18,9 @@ class EscPos {
   init() { return this.raw(0x1B, 0x40); }
 
   text(str) {
-    for (const ch of str) this.data.push(ch.charCodeAt(0) & 0xFF);
+    // Send as UTF-8 bytes for Vietnamese diacritics support
+    const buf = Buffer.from(str, 'utf8');
+    for (const b of buf) this.data.push(b);
     return this;
   }
   println(str = '') { return this.text(str).raw(0x0A); }
@@ -190,7 +192,7 @@ export async function printKitchenTicket({ orderId, tableName, items, note, time
     // Header — size 2x2 (rất to)
     .alignCenter()
     .bold(true).size(2, 2)
-    .println(removeDiacritics('CHE BIEN'))
+    .println('CHẾ BIẾN')
     .size(0, 0).bold(false)
     .newLine()
 
@@ -198,34 +200,34 @@ export async function printKitchenTicket({ orderId, tableName, items, note, time
     .alignLeft()
     .size(1, 0)
     .println(`Order: ${orderId}`)
-    .println(`Ngay: ${dateStr} (${timeStr})`)
+    .println(`Ngày: ${dateStr} (${timeStr})`)
     .size(0, 0)
     .newLine()
 
     // Tên bàn — size 1x1 (to, dễ thấy)
     .bold(true).size(1, 1)
-    .println(`Ban: ${removeDiacritics(tableName || 'N/A')}`)
+    .println(`Bàn: ${tableName || 'N/A'}`)
     .size(0, 0).bold(false)
     .size(1, 0)
-    .println(`Nguoi gui: ${removeDiacritics(staffName || 'Quay Thu Ngan')}`)
+    .println(`Người gửi: ${staffName || 'Quầy Thu Ngân'}`)
     .size(0, 0)
     .newLine()
     .line('=')
 
-    // Table header — size 1x0
+    // Table header — size 1x0 (SL trước, Món sau)
     .bold(true).size(1, 0)
-    .println('Mon             SL')
+    .println('SL  Tên món')
     .size(0, 0).bold(false)
     .line('=');
 
-  // Items — size 1x1 (to, bếp dễ đọc)
+  // Items — size 1x1 (to, bếp dễ đọc) — SL trước, Món sau
   for (const item of items) {
-    const name = removeDiacritics(item.name);
+    const name = item.name;
     const qty = String(item.quantity || 1);
     // Dùng size 1x1 → mỗi ký tự chiếm 2 cột → max ~16 chars trên dòng 32-col
     esc.bold(true).size(1, 1);
-    // Pad name to 13 chars, qty right-aligned 3 chars
-    const line = name.padEnd(13).slice(0, 13) + qty.padStart(3);
+    // qty 2 chars + space + name
+    const line = qty.padStart(2) + ' ' + name.slice(0, 13);
     esc.println(line);
     esc.size(0, 0).bold(false);
   }
@@ -235,9 +237,9 @@ export async function printKitchenTicket({ orderId, tableName, items, note, time
   // Note — size 1x0
   if (note && note.trim()) {
     esc.bold(true).size(1, 0)
-      .println(`Ghi chu:`)
+      .println('Ghi chú:')
       .bold(false)
-      .println(removeDiacritics(note))
+      .println(note)
       .size(0, 0);
   }
 
@@ -260,33 +262,33 @@ export async function printReceipt({ orderId, tableName, items, total, paymentMe
   const esc = new EscPos();
   esc.init()
     .alignCenter().bold(true).size(1, 1)
-    .println('HA NOI XUA')
+    .println('HÀ NỘI XƯA')
     .size(0, 0).bold(false)
-    .println('Bun rieu - Bun dau')
-    .println('220 Nguyen Hoang, An Phu, Thu Duc')
+    .println('Bún riêu - Bún đậu')
+    .println('220 Nguyễn Hoàng, An Phú, Thủ Đức')
     .println('Tel: 0901 681 567')
     .line()
     .alignLeft()
-    .println(`Don: ${orderId}  |  ${timeStr}`)
-    .println(`Ban: ${removeDiacritics(tableName || 'N/A')}`)
+    .println(`Đơn: ${orderId}  |  ${timeStr}`)
+    .println(`Bàn: ${tableName || 'N/A'}`)
 
-  if (staffName) esc.println(`NV: ${removeDiacritics(staffName)}`);
+  if (staffName) esc.println(`NV: ${staffName}`);
   esc.line();
 
-  // Table header
+  // Table header (SL trước)
   esc.bold(true)
     .tableRow([
-      { text: 'Mon', width: 0.5, align: 'left' },
       { text: 'SL', width: 0.1, align: 'center' },
-      { text: 'T.Tien', width: 0.4, align: 'right' },
+      { text: 'Món', width: 0.5, align: 'left' },
+      { text: 'T.Tiền', width: 0.4, align: 'right' },
     ])
     .bold(false).line();
 
-  // Items
+  // Items (SL trước)
   for (const item of items) {
     esc.tableRow([
-      { text: removeDiacritics(item.name), width: 0.5, align: 'left' },
       { text: String(item.quantity || 1), width: 0.1, align: 'center' },
+      { text: item.name, width: 0.5, align: 'left' },
       { text: fmt((item.price || 0) * (item.quantity || 1)), width: 0.4, align: 'right' },
     ]);
   }
@@ -295,15 +297,15 @@ export async function printReceipt({ orderId, tableName, items, total, paymentMe
   esc.line()
     .bold(true).size(0, 1)
     .tableRow([
-      { text: 'TONG CONG:', width: 0.5, align: 'left' },
+      { text: 'TỔNG CỘNG:', width: 0.5, align: 'left' },
       { text: fmt(total), width: 0.5, align: 'right' },
     ])
     .size(0, 0).bold(false)
-    .println(`TT: ${paymentMethod === 'transfer' ? 'Chuyen khoan' : 'Tien mat'}`)
+    .println(`TT: ${paymentMethod === 'transfer' ? 'Chuyển khoản' : 'Tiền mặt'}`)
     .line()
     .alignCenter()
-    .println('Cam on quy khach!')
-    .println('Hen gap lai :)')
+    .println('Cảm ơn quý khách!')
+    .println('Hẹn gặp lại :)')
     .newLine(3).cut();
 
   const result = printRaw(RECEIPT_PRINTER, esc.build());
