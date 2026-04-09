@@ -47,6 +47,7 @@ export default function OrderView() {
   const [orderTab, setOrderTab] = useState('dine_in');
   const [showOrderList, setShowOrderList] = useState(false);
   const [tableAreaFilter, setTableAreaFilter] = useState(tableAreas[0]?.id || 'T1');
+  const [printReceiptOnPay, setPrintReceiptOnPay] = useState(true);
   const [adminPassInput, setAdminPassInput] = useState('');
   const [pendingDeleteItem, setPendingDeleteItem] = useState(null); // { orderId, itemIndex, itemName }
 
@@ -161,8 +162,8 @@ export default function OrderView() {
     setShowPayment(false);
     setPaymentMethod('cash');
 
-    // Auto in hóa đơn
-    if (payData) printReceipt(payData);
+    // Tùy chọn in hóa đơn
+    if (payData && printReceiptOnPay) printReceipt(payData);
   };
 
   const handleAddToCart = (itemId) => {
@@ -543,6 +544,15 @@ export default function OrderView() {
                       <span>Chuyển khoản</span>
                     </button>
                   </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '15px', cursor: 'pointer', userSelect: 'none' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={printReceiptOnPay} 
+                      onChange={() => setPrintReceiptOnPay(!printReceiptOnPay)} 
+                      style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-text)' }}>In hoá đơn sau khi thanh toán</span>
+                  </label>
                 </div>
                 <div className="payment-modal__actions">
                   <div style={{ display: 'flex', gap: 'var(--space-2)', flex: 1 }}>
