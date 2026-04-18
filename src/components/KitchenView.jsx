@@ -29,7 +29,7 @@ export default function KitchenView() {
         <div className="kitchen-stats">
           <span className="kitchen-stat kitchen-stat--done">
             <span className="kitchen-stat__dot" />
-            {done.length} hoàn thành
+            {done.filter(o => o.status === 'done').length} đang phục vụ · {done.filter(o => o.status === 'paid').length} đã thanh toán
           </span>
         </div>
       </div>
@@ -39,7 +39,7 @@ export default function KitchenView() {
         <div className="kitchen-col">
           <div className="kitchen-col__header kitchen-col__header--done">
             <CircleCheck size={16} className="kitchen-col__icon" />
-            <span className="kitchen-col__title">Đã xong</span>
+            <span className="kitchen-col__title">Đơn hàng</span>
             <span className="kitchen-col__count">{done.length}</span>
           </div>
           <div className="kitchen-col__body">

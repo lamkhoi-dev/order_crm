@@ -18,7 +18,6 @@ export default function Header() {
   const currentShift = useStore(s => s.currentShift);
   const [showShiftModal, setShowShiftModal] = useState(false);
 
-  const pendingKitchen = orders.filter(o => o.status === 'pending' || o.status === 'cooking').length;
   const doneOrders = orders.filter(o => o.status === 'done').length;
 
   return (
@@ -41,10 +40,7 @@ export default function Header() {
           >
             <r.Icon size={16} className="header__role-icon" />
             <span className="header__role-label">{r.label}</span>
-            {r.id === 'kitchen' && pendingKitchen > 0 && (
-              <span className="header__badge header__badge--warning">{pendingKitchen}</span>
-            )}
-            {r.id === 'order' && doneOrders > 0 && (
+            {r.id === 'kitchen' && doneOrders > 0 && (
               <span className="header__badge header__badge--success">{doneOrders}</span>
             )}
           </button>

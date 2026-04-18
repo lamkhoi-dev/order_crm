@@ -42,26 +42,25 @@ export default function OrderView() {
   const splitBill = useStore(s => s.splitBill);
   const mergeBills = useStore(s => s.mergeBills);
 
+  // --- UI State ---
+  const [subTab, setSubTab] = useState('order'); // 'order' | 'floorplan'
   const [activeCategory, setActiveCategory] = useState('all');
-  const [showCart, setShowCart] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [searchQuery, setSearchQuery] = useState('');
-  const [orderTab, setOrderTab] = useState('dine_in');
-  const [showOrderList, setShowOrderList] = useState(false);
-  const [tableAreaFilter, setTableAreaFilter] = useState(tableAreas[0]?.id || 'T1');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [printReceiptOnPay, setPrintReceiptOnPay] = useState(false);
+  const [showPaymentMode, setShowPaymentMode] = useState(false);
+  const [tableAreaFilter, setTableAreaFilter] = useState(tableAreas[0]?.id || 'T1');
   const [adminPassInput, setAdminPassInput] = useState('');
-  const [pendingDeleteItem, setPendingDeleteItem] = useState(null); // { orderId, itemIndex, itemName }
-  const [actionModal, setActionModal] = useState(null); // 'transfer' | 'split' | 'merge' | null
-  const [splitSelected, setSplitSelected] = useState([]); // indices of items to split
-  const [mergeSelected, setMergeSelected] = useState([]); // order IDs to merge
+  const [pendingDeleteItem, setPendingDeleteItem] = useState(null);
+  const [actionModal, setActionModal] = useState(null);
+  const [splitSelected, setSplitSelected] = useState([]);
+  const [mergeSelected, setMergeSelected] = useState([]);
 
+  // --- Derived Data ---
   const selectedTable = tables.find(t => t.id === selectedTableId);
   const tableOrder = selectedTable?.orderId
     ? orders.find(o => o.id === selectedTable.orderId)
     : null;
-
   const canAddMore = selectedTable && (selectedTable.status === 'waiting' || selectedTable.status === 'served') && tableOrder;
 
   const filteredItems = useMemo(() => {
@@ -77,7 +76,7 @@ export default function OrderView() {
       items = items.filter(m => normalize(m.name).includes(q));
     }
     return items;
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, menuItems]);
 
   const filteredTables = useMemo(() => {
     if (tableAreaFilter === 'all') return tables;
@@ -86,6 +85,7 @@ export default function OrderView() {
 
   const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
   const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
+  const canOrder = selectedTableId != null;
 
   useEffect(() => {
     if (tableAreas.length > 0 && !tableAreas.find(a => a.id === tableAreaFilter)) {
@@ -93,19 +93,22 @@ export default function OrderView() {
     }
   }, [tableAreas, tableAreaFilter]);
 
-  useEffect(() => {
-    if (!showCart) setPendingDeleteItem(null);
-  }, [showCart]);
+  // --- Handlers ---
+  const staffName = (staffId) => {
+    const s = STAFF_LIST.find(st => st.id === staffId);
+    return s ? s.name : '—';
+  };
 
-  const orderCounts = useMemo(() => {
-    const active = orders.filter(o => o.status !== 'paid');
-    const counts = { all: active.length };
-    ORDER_TYPES.forEach(t => {
-      counts[t.id] = active.filter(o => (o.orderType || 'dine_in') === t.id).length;
-    });
-    counts.draft = drafts.length;
-    return counts;
-  }, [orders, drafts]);
+  const handleSelectTable = (tableId) => {
+    selectTable(tableId);
+    setShowPaymentMode(false);
+    setSubTab('order');
+  };
+
+  const handleAddToCart = (itemId) => {
+    if (!selectedTableId) { addToast('Chọn bàn trước!', 'warning'); return; }
+    addToCart(itemId);
+  };
 
   const handleSendOrder = () => {
     if (!selectedTableId) { addToast('Vui lòng chọn bàn trước!', 'warning'); return; }
@@ -114,7 +117,6 @@ export default function OrderView() {
       const ok = addItemsToOrder(tableOrder.id);
       if (ok) {
         addToast(`Đã thêm món vào đơn ${tableOrder.id}!`, 'success');
-        setShowCart(false);
         const kitchenItems = cart.filter(item => !item.no_kitchen);
         if (kitchenItems.length > 0) {
           printKitchenTicket({
@@ -134,8 +136,6 @@ export default function OrderView() {
     const orderId = sendOrderToKitchen();
     if (orderId) {
       addToast(`Đã gửi đơn ${orderId} cho bếp!`, 'success');
-      setShowCart(false);
-      // Auto in phiếu bếp
       const kitchenItems = currentCart.filter(item => !item.no_kitchen);
       if (kitchenItems.length > 0) {
         printKitchenTicket({
@@ -153,12 +153,11 @@ export default function OrderView() {
     if (!selectedTableId) { addToast('Vui lòng chọn bàn trước!', 'warning'); return; }
     if (!cart.length) { addToast('Vui lòng chọn món!', 'warning'); return; }
     const draftId = saveDraft();
-    if (draftId) { addToast('Đã tạm lưu đơn hàng!', 'info'); setShowCart(false); }
+    if (draftId) addToast('Đã tạm lưu đơn hàng!', 'info');
   };
 
   const handlePay = (orderId) => {
     const methodLabel = PAYMENT_METHODS.find(m => m.id === paymentMethod)?.label || 'Tiền mặt';
-    // Lưu thông tin trước khi payOrder clear state
     const order = orders.find(o => o.id === orderId);
     const payData = order ? {
       orderId,
@@ -168,709 +167,141 @@ export default function OrderView() {
       paymentMethod,
       staffName: staffName(order.staffId),
     } : null;
-
     payOrder(orderId, paymentMethod);
     addToast(`Thanh toán ${methodLabel} thành công!`, 'success');
-    setShowPayment(false);
+    setShowPaymentMode(false);
     setPaymentMethod('cash');
-
-    // Tùy chọn in hóa đơn
     if (payData && printReceiptOnPay) printReceipt(payData);
   };
 
   const handlePrePrint = (orderId) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
-    const payData = {
+    printReceipt({
       orderId,
       tableName: order.tableName,
       items: order.items,
       total: order.total,
       paymentMethod: 'temp',
       staffName: staffName(order.staffId),
-    };
-    printReceipt(payData);
+    });
     addToast('Đã in phiếu tạm tính!', 'info');
   };
 
-  const handleAddToCart = (itemId) => {
-    if (!selectedTableId) { addToast('Chọn bàn trước!', 'warning'); return; }
-    addToCart(itemId);
-  };
-
-  const canOrder = selectedTableId != null;
-  const servedOrders = orders.filter(o => o.status === 'done');
-
-  const activeOrders = useMemo(() => {
-    let result = orders.filter(o => o.status !== 'paid');
-    if (orderTab !== 'all') {
-      result = result.filter(o => (o.orderType || 'dine_in') === orderTab);
-    }
-    return result;
-  }, [orders, orderTab]);
-
-  const staffName = (staffId) => {
-    const s = STAFF_LIST.find(st => st.id === staffId);
-    return s ? s.name : '—';
-  };
-
+  // =============================================
+  // RENDER
+  // =============================================
   return (
     <div className="order-view" id="order-view">
-      {/* Top Action Bar */}
-      <div className="order-topbar" id="order-topbar">
-        <div className="order-topbar__left">
-          <button
-            className={`topbar-btn ${!showOrderList ? 'topbar-btn--active' : ''}`}
-            onClick={() => setShowOrderList(false)}
-          >
-            <LayoutGrid size={15} /> Sơ đồ bàn
-          </button>
-          <button
-            className={`topbar-btn ${showOrderList ? 'topbar-btn--active' : ''}`}
-            onClick={() => setShowOrderList(true)}
-          >
-            <ClipboardList size={15} /> Đơn hàng
-            {orderCounts.all > 0 && <span className="topbar-btn__badge">{orderCounts.all}</span>}
-          </button>
-        </div>
-        <div className="order-topbar__right">
-          <div className="staff-select" id="staff-select">
-            <UserRound size={15} className="staff-select__icon" />
-            <select
-              className="staff-select__dropdown"
-              value={selectedStaffId || ''}
-              onChange={e => setSelectedStaff(e.target.value ? Number(e.target.value) : null)}
-            >
-              <option value="">Chọn NV</option>
-              {STAFF_LIST.map(s => (
-                <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
-              ))}
-            </select>
-          </div>
-        </div>
+      {/* ===== SUB-TAB SWITCHER ===== */}
+      <div className="ov-tabs" id="ov-tabs">
+        <button
+          className={`ov-tab ${subTab === 'order' ? 'ov-tab--active' : ''}`}
+          onClick={() => setSubTab('order')}
+        >
+          <Utensils size={15} /> Order
+          {cartCount > 0 && <span className="ov-tab__badge">{cartCount}</span>}
+        </button>
+        <button
+          className={`ov-tab ${subTab === 'floorplan' ? 'ov-tab--active' : ''}`}
+          onClick={() => setSubTab('floorplan')}
+        >
+          <LayoutGrid size={15} /> Sơ đồ
+        </button>
       </div>
 
-      {/* ========== ORDER LIST VIEW ========== */}
-      {showOrderList ? (
-        <section className="order-list-view" id="order-list-view">
-          <div className="order-type-tabs" id="order-type-tabs">
-            <button
-              className={`order-type-tab ${orderTab === 'all' ? 'order-type-tab--active' : ''}`}
-              onClick={() => setOrderTab('all')}
-            >
-              Tất cả ({orderCounts.all})
-            </button>
-            {ORDER_TYPES.map(t => (
-              <button
-                key={t.id}
-                className={`order-type-tab ${orderTab === t.id ? 'order-type-tab--active' : ''}`}
-                onClick={() => setOrderTab(t.id)}
-              >
-                {t.label} ({orderCounts[t.id] || 0})
-              </button>
-            ))}
-            <button
-              className={`order-type-tab order-type-tab--draft ${orderTab === 'draft' ? 'order-type-tab--active' : ''}`}
-              onClick={() => setOrderTab('draft')}
-            >
-              <Save size={13} /> Tạm lưu ({drafts.length})
-            </button>
+      {/* ===== FLOOR PLAN VIEW ===== */}
+      {subTab === 'floorplan' && (
+        <section className="floorplan" id="floorplan-section">
+          <div className="floorplan__header">
+            <div className="area-filter">
+              {tableAreas.map(area => (
+                <button
+                  key={area.id}
+                  className={`area-btn ${tableAreaFilter === area.id ? 'area-btn--active' : ''}`}
+                  onClick={() => setTableAreaFilter(area.id)}
+                >{area.name}</button>
+              ))}
+            </div>
+            <div className="table-legend">
+              {Object.entries(TABLE_STATUS_CONFIG).map(([key, cfg]) => (
+                <span key={key} className="table-legend__item">
+                  <span className={`table-legend__dot table-legend__dot--${cfg.color}`} />
+                  {cfg.label}
+                </span>
+              ))}
+            </div>
           </div>
 
-          <div className="order-cards" id="order-cards">
-            {orderTab === 'draft' ? (
-              drafts.length === 0 ? (
-                <div className="order-list-empty">
-                  <Save size={32} strokeWidth={1.5} />
-                  <p>Không có đơn tạm lưu</p>
-                </div>
-              ) : (
-                drafts.map(draft => (
-                  <div key={draft.id} className="order-card order-card--draft" id={`draft-${draft.id}`}>
-                    <div className="order-card__head">
-                      <span className="order-card__table">{draft.tableName}</span>
-                      <span className="order-card__type"><Save size={12} /> Tạm lưu</span>
-                    </div>
-                    <div className="order-card__items-preview">
-                      {draft.items.slice(0, 3).map((item, i) => (
-                        <span key={i}>{item.name} ×{item.quantity}</span>
-                      ))}
-                      {draft.items.length > 3 && <span>+{draft.items.length - 3} món khác</span>}
-                    </div>
-                    <div className="order-card__footer">
-                      <span className="order-card__total">{formatCurrency(draft.total)}</span>
-                      <div className="order-card__actions">
-                        <button className="btn btn--sm btn--secondary" onClick={() => deleteDraft(draft.id)}>Xoá</button>
-                        <button className="btn btn--sm btn--primary" onClick={() => {
-                          loadDraft(draft.id);
-                          setShowOrderList(false);
-                          addToast('Đã nạp lại đơn tạm lưu!', 'info');
-                        }}>Mở lại</button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )
-            ) : activeOrders.length === 0 ? (
-              <div className="order-list-empty">
-                <ClipboardList size={32} strokeWidth={1.5} />
-                <p>Không có đơn hàng</p>
-              </div>
-            ) : (
-              activeOrders.map(order => (
-                <div key={order.id} className={`order-card order-card--${order.status}`} id={`order-${order.id}`}>
-                  <div className="order-card__head">
-                    <div className="order-card__head-left">
-                      <span className="order-card__table">{order.tableName}</span>
-                      <span className="order-card__id">{order.id}</span>
-                    </div>
-                    <span className={`order-card__status order-card__status--${order.status}`}>
-                      {order.status === 'pending' && <><Timer size={12} /> Chờ bếp</>}
-                      {order.status === 'cooking' && <><Flame size={12} /> Đang nấu</>}
-                      {order.status === 'done' && <><CircleCheck size={12} /> Đã ra</>}
-                    </span>
-                  </div>
-                  {order.guestCount > 0 && (
-                    <span className="order-card__guests"><Users size={12} /> {order.guestCount} khách</span>
-                  )}
-                  <div className="order-card__items-preview">
-                    {order.items.map((item, i) => (
-                      <span key={i}>{item.name} ×{item.quantity}</span>
-                    ))}
-                  </div>
-                  {order.note && (
-                    <div className="order-card__note"><PencilLine size={12} /> {order.note}</div>
-                  )}
-                  <div className="order-card__footer">
-                    <span className="order-card__total">{formatCurrency(order.total)}</span>
-                    <span className="order-card__time">
-                      {new Date(order.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    {order.status === 'done' && (
-                      <button className="btn btn--sm btn--accent" onClick={() => {
-                        selectTable(order.tableId);
-                        setShowPayment(true);
-                        setShowOrderList(false);
-                      }}>
-                        Thanh toán
-                      </button>
-                    )}
-                    {(order.status === 'pending' || order.status === 'cooking') && (
-                      <button className="btn btn--sm btn--secondary" onClick={() => {
-                        selectTable(order.tableId);
-                        setShowOrderList(false);
-                      }}>
-                        <Plus size={12} /> Thêm món
-                      </button>
+          <div className="table-grid" id="table-grid">
+            {filteredTables.map(t => {
+              const cfg = TABLE_STATUS_CONFIG[t.status];
+              const isSelected = selectedTableId === t.id;
+              const tOrder = t.orderId ? orders.find(o => o.id === t.orderId) : null;
+              const tDraft = drafts.find(d => d.tableId === t.id);
+              return (
+                <button
+                  key={t.id}
+                  id={`table-${t.id}`}
+                  className={`table-card table-card--${cfg.color} ${isSelected ? 'table-card--selected' : ''}`}
+                  onClick={() => handleSelectTable(t.id)}
+                >
+                  <span className="table-card__icon">{cfg.icon}</span>
+                  <span className="table-card__name">{t.name}</span>
+                  <div className="table-card__meta">
+                    <span className="table-card__seats">{t.seats} ghế</span>
+                    {t.guestCount > 0 && (
+                      <span className="table-card__guests"><Users size={11} /> {t.guestCount}</span>
                     )}
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-      ) : (
-        <>
-          {/* ========== TABLE GRID VIEW ========== */}
-          <section className="order-view__tables" id="table-grid-section">
-            <div className="section-header">
-              <h2 className="section-title">Sơ đồ bàn</h2>
-              <div className="section-header__right">
-                <div className="area-filter">
-                  {tableAreas.map(area => (
-                    <button
-                      key={area.id}
-                      className={`area-btn ${tableAreaFilter === area.id ? 'area-btn--active' : ''}`}
-                      onClick={() => setTableAreaFilter(area.id)}
-                    >{area.name}</button>
-                  ))}
-                </div>
-                <div className="table-legend">
-                  {Object.entries(TABLE_STATUS_CONFIG).map(([key, cfg]) => (
-                    <span key={key} className="table-legend__item">
-                      <span className={`table-legend__dot table-legend__dot--${cfg.color}`} />
-                      {cfg.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="table-grid" id="table-grid">
-              {filteredTables.map(t => {
-                const cfg = TABLE_STATUS_CONFIG[t.status];
-                const isSelected = selectedTableId === t.id;
-                const tOrder = t.orderId ? orders.find(o => o.id === t.orderId) : null;
-                const tDraft = drafts.find(d => d.tableId === t.id);
-                return (
-                  <button
-                    key={t.id}
-                    id={`table-${t.id}`}
-                    className={`table-card table-card--${cfg.color} ${isSelected ? 'table-card--selected' : ''}`}
-                    onClick={() => {
-                      selectTable(t.id);
-                      if (t.status === 'served') {
-                        setShowPayment(true);
-                      } else {
-                        setShowPayment(false);
-                        const menuEl = document.getElementById('menu-section');
-                        if (menuEl) menuEl.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    }}
-                  >
-                    <span className="table-card__icon">{cfg.icon}</span>
-                    <span className="table-card__name">{t.name}</span>
-                    <div className="table-card__meta">
-                      <span className="table-card__seats">{t.seats} ghế</span>
-                      {t.guestCount > 0 && (
-                        <span className="table-card__guests"><Users size={11} /> {t.guestCount}</span>
-                      )}
-                    </div>
-                    <span className={`table-card__status table-card__status--${cfg.color}`}>
-                      {cfg.label}
-                    </span>
-                    {tOrder && (
-                      <span className="table-card__total">{formatCurrency(tOrder.total)}</span>
-                    )}
-                    {tDraft && !tOrder && (
-                      <span className="table-card__draft-badge"><Save size={10} /> Tạm lưu</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Guest count bar */}
-            {selectedTable && selectedTable.status !== 'served' && (
-              <div className="guest-count-bar" id="guest-count-bar">
-                <div className="guest-count-bar__info">
-                  <span className="guest-count-bar__table">{selectedTable.name}</span>
-                  <span className="guest-count-bar__area">
-                    {tableAreas.find(a => a.id === selectedTable.area)?.name}
+                  <span className={`table-card__status table-card__status--${cfg.color}`}>
+                    {cfg.label}
                   </span>
-                </div>
-                <div className="guest-count-bar__input">
-                  <label><Users size={14} /> Số khách:</label>
-                  <div className="guest-count-controls">
-                    <button className="qty-btn" onClick={() => setGuestCount(selectedTable.id, selectedTable.guestCount - 1)}><Minus size={14} /></button>
-                    <span className="qty-value">{selectedTable.guestCount}</span>
-                    <button className="qty-btn" onClick={() => setGuestCount(selectedTable.id, selectedTable.guestCount + 1)}><Plus size={14} /></button>
-                  </div>
-                </div>
-                <div className="guest-count-bar__type">
-                  <select
-                    className="order-type-select"
-                    value={orderType}
-                    onChange={e => setOrderType(e.target.value)}
-                  >
-                    {ORDER_TYPES.map(t => (
-                      <option key={t.id} value={t.id}>{t.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
-          </section>
+                  {tOrder && (
+                    <span className="table-card__total">{formatCurrency(tOrder.total)}</span>
+                  )}
+                  {tDraft && !tOrder && (
+                    <span className="table-card__draft-badge"><Save size={10} /> Tạm lưu</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-          {/* ========== CURRENT ORDER ITEMS (for waiting tables) ========== */}
-          {canAddMore && tableOrder && (
-            <section className="current-order-section">
-              <div className="section-header">
-                <h2 className="section-title">
-                  <ClipboardList size={18} /> Đơn đang chờ — {selectedTable.name}
-                </h2>
-                <span className="current-order-total">
-                  {formatCurrency(tableOrder.total)}
+          {/* Guest count bar */}
+          {selectedTable && selectedTable.status !== 'served' && (
+            <div className="guest-count-bar" id="guest-count-bar">
+              <div className="guest-count-bar__info">
+                <span className="guest-count-bar__table">{selectedTable.name}</span>
+                <span className="guest-count-bar__area">
+                  {tableAreas.find(a => a.id === selectedTable.area)?.name}
                 </span>
               </div>
-              <div className="current-order-items">
-                <div className="current-order-items__header">
-                  <span className="col-name">Tên món</span>
-                  <span className="col-qty">SL</span>
-                  <span className="col-price">Thành tiền</span>
-                  <span className="col-del"></span>
-                </div>
-                {tableOrder.items.map((item, i) => (
-                  <div key={i} className="current-order-item">
-                    <span className="col-name">{item.name}</span>
-                    <span className="col-qty">{item.quantity}</span>
-                    <span className="col-price">{formatCurrency(item.price * item.quantity)}</span>
-                    <button
-                      className="current-order-item__delete"
-                      title="Xoá món (cần mật khẩu admin)"
-                      onClick={() => setPendingDeleteItem({ orderId: tableOrder.id, itemIndex: i, itemName: item.name })}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              {tableOrder.note && (
-                <div className="current-order-note">
-                  <PencilLine size={13} /> {tableOrder.note}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* Payment Modal */}
-          {showPayment && selectedTable && selectedTable.status === 'served' && tableOrder && (
-            <div className="modal-overlay" onClick={() => setShowPayment(false)}>
-              <div className="payment-modal" onClick={e => e.stopPropagation()}>
-                <div className="payment-modal__header">
-                  <h3><CircleDollarSign size={18} /> Thanh toán - {selectedTable.name}</h3>
-                  <button className="modal-close" onClick={() => setShowPayment(false)}><X size={16} /></button>
-                </div>
-                <div className="payment-modal__body">
-                  <div className="payment-meta">
-                    <span><Users size={13} /> {tableOrder.guestCount || 0} khách</span>
-                    <span><Clock size={13} /> {new Date(tableOrder.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
-                    {tableOrder.staffId && <span><UserRound size={13} /> {staffName(tableOrder.staffId)}</span>}
-                  </div>
-                  <div className="payment-items">
-                    <div className="payment-items__header">
-                      <span>Tên món</span>
-                      <span>SL</span>
-                      <span>Thành tiền</span>
-                    </div>
-                    <div style={{ maxHeight: '35vh', overflowY: 'auto', paddingRight: '5px' }}>
-                      {tableOrder.items.map((item, i) => (
-                        <div key={i} className="payment-item">
-                          <span className="payment-item__name">{item.name}</span>
-                          <span className="payment-item__qty">{item.quantity}</span>
-                          <span className="payment-item__price">{formatCurrency(item.price * item.quantity)}</span>
-                          <button
-                            className="payment-item__delete"
-                            title="Xoá món (cần mật khẩu admin)"
-                            onClick={() => setPendingDeleteItem({ orderId: tableOrder.id, itemIndex: i, itemName: item.name })}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="payment-total">
-                    <span>Tổng cộng</span>
-                    <span className="payment-total__amount">{formatCurrency(tableOrder.total)}</span>
-                  </div>
-                </div>
-                <div className="payment-method">
-                  <span className="payment-method__label">Phương thức thanh toán</span>
-                  <div className="payment-method__options">
-                    <button
-                      className={`payment-method__btn ${paymentMethod === 'cash' ? 'payment-method__btn--active' : ''}`}
-                      onClick={() => setPaymentMethod('cash')}
-                    >
-                      <Banknote size={20} />
-                      <span>Tiền mặt</span>
-                    </button>
-                    <button
-                      className={`payment-method__btn ${paymentMethod === 'transfer' ? 'payment-method__btn--active' : ''}`}
-                      onClick={() => setPaymentMethod('transfer')}
-                    >
-                      <Landmark size={20} />
-                      <span>Chuyển khoản</span>
-                    </button>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={printReceiptOnPay} 
-                        onChange={() => setPrintReceiptOnPay(!printReceiptOnPay)} 
-                        style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
-                      />
-                      <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--color-text)' }}>In bill khi thu tiền</span>
-                    </label>
-                    <button className="btn btn--secondary btn--sm" style={{ padding: '0 12px' }} onClick={() => handlePrePrint(tableOrder.id)}>
-                      <Printer size={14} /> In tạm
-                    </button>
-                  </div>
-                </div>
-                <div className="payment-modal__actions">
-                  <div style={{ display: 'flex', gap: 'var(--space-2)', flex: 1, flexWrap: 'wrap' }}>
-                    <button className="btn btn--secondary" style={{ flex: '1 1 auto', padding: '0 10px' }} onClick={() => setShowPayment(false)}>Đóng</button>
-                    <button className="btn btn--secondary" style={{ flex: '1 1 auto', padding: '0 10px', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }} onClick={() => {
-                      setShowPayment(false);
-                      const menuEl = document.getElementById('menu-section');
-                      if (menuEl) menuEl.scrollIntoView({ behavior: 'smooth' });
-                    }}>
-                      <PlusCircle size={16} style={{ marginRight: '4px' }} /> Món
-                    </button>
-                    <button className="btn btn--secondary" style={{ flex: '1 1 auto', padding: '0 10px' }} onClick={() => { setActionModal('transfer'); }}>
-                      <ArrowRightLeft size={14} style={{ marginRight: '4px' }} /> Chuyển bàn
-                    </button>
-                    <button className="btn btn--secondary" style={{ flex: '1 1 auto', padding: '0 10px' }} onClick={() => { setSplitSelected([]); setActionModal('split'); }}>
-                      <Scissors size={14} style={{ marginRight: '4px' }} /> Tách bill
-                    </button>
-                    <button className="btn btn--secondary" style={{ flex: '1 1 auto', padding: '0 10px' }} onClick={() => { setMergeSelected([]); setActionModal('merge'); }}>
-                      <Merge size={14} style={{ marginRight: '4px' }} /> Gộp bill
-                    </button>
-                  </div>
-                  <button className="btn btn--primary btn--lg" id="btn-pay" style={{ flex: 1, padding: '0' }} onClick={() => handlePay(tableOrder.id)}>
-                    {paymentMethod === 'cash' ? <Banknote size={18} /> : <Landmark size={18} />}
-                    Thu tiền
-                  </button>
+              <div className="guest-count-bar__input">
+                <label><Users size={14} /> Số khách:</label>
+                <div className="guest-count-controls">
+                  <button className="qty-btn" onClick={() => setGuestCount(selectedTable.id, selectedTable.guestCount - 1)}><Minus size={14} /></button>
+                  <span className="qty-value">{selectedTable.guestCount}</span>
+                  <button className="qty-btn" onClick={() => setGuestCount(selectedTable.id, selectedTable.guestCount + 1)}><Plus size={14} /></button>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Admin Password Modal for item removal */}
-          {pendingDeleteItem && (
-            <div className="modal-overlay" onClick={() => { setPendingDeleteItem(null); setAdminPassInput(''); }}>
-              <div className="admin-pass-modal" onClick={e => e.stopPropagation()}>
-                <div className="admin-pass-modal__header">
-                  <h3><Lock size={18} /> Xác nhận xoá món</h3>
-                  <button className="modal-close" onClick={() => { setPendingDeleteItem(null); setAdminPassInput(''); }}><X size={16} /></button>
-                </div>
-                <div className="admin-pass-modal__body">
-                  <p className="admin-pass-modal__msg">
-                    Xoá <strong>{pendingDeleteItem.itemName}</strong> khỏi đơn hàng?
-                  </p>
-                  <label className="admin-pass-modal__label">Mật khẩu Admin</label>
-                  <input
-                    type="password"
-                    className="admin-pass-modal__input"
-                    placeholder="Nhập mật khẩu..."
-                    value={adminPassInput}
-                    onChange={e => setAdminPassInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        if (adminPassInput === 'admin123') {
-                          removeItemFromOrder(pendingDeleteItem.orderId, pendingDeleteItem.itemIndex);
-                          addToast(`Đã xoá: ${pendingDeleteItem.itemName}`, 'info');
-                          setPendingDeleteItem(null);
-                          setAdminPassInput('');
-                          // close payment if order was deleted entirely
-                          const orderStillExists = orders.find(o => o.id === pendingDeleteItem.orderId);
-                          if (!orderStillExists || orderStillExists.items?.length <= 1) setShowPayment(false);
-                        } else {
-                          addToast('Sai mật khẩu!', 'warning');
-                          setAdminPassInput('');
-                        }
-                      }
-                    }}
-                    autoFocus
-                  />
-                </div>
-                <div className="admin-pass-modal__actions">
-                  <button className="btn btn--secondary" onClick={() => { setPendingDeleteItem(null); setAdminPassInput(''); }}>Huỷ</button>
-                  <button className="btn btn--danger" onClick={() => {
-                    if (adminPassInput === 'admin123') {
-                      removeItemFromOrder(pendingDeleteItem.orderId, pendingDeleteItem.itemIndex);
-                      addToast(`Đã xoá: ${pendingDeleteItem.itemName}`, 'info');
-                      setPendingDeleteItem(null);
-                      setAdminPassInput('');
-                      const orderStillExists = orders.find(o => o.id === pendingDeleteItem.orderId);
-                      if (!orderStillExists || orderStillExists.items?.length <= 1) setShowPayment(false);
-                    } else {
-                      addToast('Sai mật khẩu!', 'warning');
-                      setAdminPassInput('');
-                    }
-                  }}>
-                    <Trash2 size={16} /> Xác nhận xoá
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ===== TRANSFER TABLE MODAL ===== */}
-          {actionModal === 'transfer' && tableOrder && (
-            <div className="modal-overlay" onClick={() => setActionModal(null)}>
-              <div className="admin-pass-modal" style={{ minWidth: '360px', maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
-                <div className="admin-pass-modal__header">
-                  <h3><ArrowRightLeft size={18} /> Chuyển bàn — {selectedTable?.name}</h3>
-                  <button className="modal-close" onClick={() => setActionModal(null)}><X size={16} /></button>
-                </div>
-                <div className="admin-pass-modal__body" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                  <p style={{ marginBottom: '12px', color: 'var(--color-text-muted)', fontSize: '14px' }}>Chọn bàn trống để chuyển đơn sang:</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                    {tables.filter(t => t.status === 'empty' && t.id !== selectedTableId).map(t => (
-                      <button
-                        key={t.id}
-                        className="btn btn--secondary"
-                        style={{ padding: '14px 8px', fontSize: '14px', fontWeight: 600 }}
-                        onClick={async () => {
-                          await transferTable(tableOrder.id, selectedTableId, t.id);
-                          setActionModal(null);
-                          setShowPayment(false);
-                        }}
-                      >
-                        {t.name}
-                      </button>
-                    ))}
-                  </div>
-                  {tables.filter(t => t.status === 'empty' && t.id !== selectedTableId).length === 0 && (
-                    <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '20px 0' }}>Không có bàn trống nào</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ===== SPLIT BILL MODAL ===== */}
-          {actionModal === 'split' && tableOrder && (
-            <div className="modal-overlay" onClick={() => setActionModal(null)}>
-              <div className="admin-pass-modal" style={{ minWidth: '400px', maxWidth: '550px' }} onClick={e => e.stopPropagation()}>
-                <div className="admin-pass-modal__header">
-                  <h3><Scissors size={18} /> Tách bill — {selectedTable?.name}</h3>
-                  <button className="modal-close" onClick={() => setActionModal(null)}><X size={16} /></button>
-                </div>
-                <div className="admin-pass-modal__body" style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                  <p style={{ marginBottom: '12px', color: 'var(--color-text-muted)', fontSize: '14px' }}>Chọn món để tách ra:</p>
-                  {tableOrder.items.map((item, idx) => (
-                    <label key={idx} style={{
-                      display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px',
-                      borderBottom: '1px solid var(--color-divider)', cursor: 'pointer',
-                      background: splitSelected.includes(idx) ? 'rgba(59,130,246,0.08)' : 'transparent',
-                      borderRadius: '6px', marginBottom: '2px'
-                    }}>
-                      <input
-                        type="checkbox"
-                        checked={splitSelected.includes(idx)}
-                        onChange={() => {
-                          setSplitSelected(prev =>
-                            prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
-                          );
-                        }}
-                        style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)' }}
-                      />
-                      <span style={{ flex: 1, fontWeight: 500 }}>{item.name} ×{item.quantity}</span>
-                      <span style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{formatCurrency(item.price * item.quantity)}</span>
-                    </label>
+              <div className="guest-count-bar__type">
+                <select className="order-type-select" value={orderType} onChange={e => setOrderType(e.target.value)}>
+                  {ORDER_TYPES.map(t => (
+                    <option key={t.id} value={t.id}>{t.label}</option>
                   ))}
-
-                  {splitSelected.length > 0 && (
-                    <>
-                      <div style={{ margin: '16px 0 8px', fontWeight: 600, fontSize: '14px', color: 'var(--color-text)' }}>
-                        Chuyển {splitSelected.length} món sang bàn:
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                        {tables.filter(t => t.status === 'empty' && t.id !== selectedTableId).map(t => (
-                          <button
-                            key={t.id}
-                            className="btn btn--primary btn--sm"
-                            style={{ padding: '10px 6px' }}
-                            onClick={async () => {
-                              const ok = await splitBill(tableOrder.id, splitSelected, t.id);
-                              if (ok) {
-                                setActionModal(null);
-                                setShowPayment(false);
-                              }
-                            }}
-                          >
-                            {t.name}
-                          </button>
-                        ))}
-                      </div>
-                      {tables.filter(t => t.status === 'empty' && t.id !== selectedTableId).length === 0 && (
-                        <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '12px 0' }}>Không có bàn trống</p>
-                      )}
-                    </>
-                  )}
-                </div>
+                </select>
               </div>
             </div>
           )}
+        </section>
+      )}
 
-          {/* ===== MERGE BILL MODAL ===== */}
-          {actionModal === 'merge' && tableOrder && (() => {
-            const otherActiveOrders = orders.filter(o =>
-              o.status === 'done' && o.id !== tableOrder.id
-            );
-            return (
-              <div className="modal-overlay" onClick={() => setActionModal(null)}>
-                <div className="admin-pass-modal" style={{ minWidth: '400px', maxWidth: '550px' }} onClick={e => e.stopPropagation()}>
-                  <div className="admin-pass-modal__header">
-                    <h3><Merge size={18} /> Gộp bill vào — {selectedTable?.name}</h3>
-                    <button className="modal-close" onClick={() => setActionModal(null)}><X size={16} /></button>
-                  </div>
-                  <div className="admin-pass-modal__body" style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                    <p style={{ marginBottom: '12px', color: 'var(--color-text-muted)', fontSize: '14px' }}>
-                      Chọn bàn muốn gộp vào bàn {selectedTable?.name}:
-                    </p>
-                    {otherActiveOrders.length === 0 ? (
-                      <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '20px 0' }}>Không có bàn nào khác đang có đơn</p>
-                    ) : (
-                      otherActiveOrders.map(o => (
-                        <label key={o.id} style={{
-                          display: 'flex', alignItems: 'center', gap: '10px', padding: '12px',
-                          borderBottom: '1px solid var(--color-divider)', cursor: 'pointer',
-                          background: mergeSelected.includes(o.id) ? 'rgba(59,130,246,0.08)' : 'transparent',
-                          borderRadius: '6px', marginBottom: '2px'
-                        }}>
-                          <input
-                            type="checkbox"
-                            checked={mergeSelected.includes(o.id)}
-                            onChange={() => {
-                              setMergeSelected(prev =>
-                                prev.includes(o.id) ? prev.filter(i => i !== o.id) : [...prev, o.id]
-                              );
-                            }}
-                            style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)' }}
-                          />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600 }}>{o.tableName || 'Bàn ?'}</div>
-                            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                              {o.items.map(i => `${i.name}×${i.quantity}`).join(', ')}
-                            </div>
-                          </div>
-                          <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-primary)' }}>{formatCurrency(o.total)}</span>
-                        </label>
-                      ))
-                    )}
-                  </div>
-                  {mergeSelected.length > 0 && (
-                    <div className="admin-pass-modal__actions">
-                      <button className="btn btn--secondary" onClick={() => setActionModal(null)}>Huỷ</button>
-                      <button className="btn btn--primary" onClick={async () => {
-                        const ok = await mergeBills(tableOrder.id, mergeSelected);
-                        if (ok) {
-                          setActionModal(null);
-                          setShowPayment(false);
-                        }
-                      }}>
-                        <Merge size={16} /> Gộp {mergeSelected.length} bàn
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* ========== MENU SECTION ========== */}
-          <section className="order-view__menu" id="menu-section">
-            <div className="section-header">
-              <h2 className="section-title">
-                {canAddMore
-                  ? <><PlusCircle size={18} /> Thêm món - {selectedTable.name}</>
-                  : selectedTable
-                    ? <><Utensils size={18} /> Gọi món - {selectedTable.name}</>
-                    : <><Utensils size={18} /> Chọn bàn để gọi món</>
-                }
-              </h2>
-            </div>
-
-            {/* Search Bar */}
-            <div className="menu-search" id="menu-search">
-              <Search size={16} className="menu-search__icon" />
-              <input
-                type="text"
-                className="menu-search__input"
-                placeholder="Tìm món ăn..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                id="menu-search-input"
-              />
-              {searchQuery && (
-                <button className="menu-search__clear" onClick={() => setSearchQuery('')}><X size={14} /></button>
-              )}
-            </div>
-
+      {/* ===== ORDER VIEW (SPLIT-SCREEN) ===== */}
+      {subTab === 'order' && (
+        <div className="ov-split" id="ov-split">
+          {/* ── LEFT PANEL: Menu ── */}
+          <div className="ov-left">
             {/* Category Tabs */}
             <div className="category-tabs" id="category-tabs">
               <button
@@ -888,6 +319,22 @@ export default function OrderView() {
                   {cat.name}
                 </button>
               ))}
+            </div>
+
+            {/* Search Bar */}
+            <div className="menu-search" id="menu-search">
+              <Search size={16} className="menu-search__icon" />
+              <input
+                type="text"
+                className="menu-search__input"
+                placeholder="Tìm món ăn..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                id="menu-search-input"
+              />
+              {searchQuery && (
+                <button className="menu-search__clear" onClick={() => setSearchQuery('')}><X size={14} /></button>
+              )}
             </div>
 
             {/* Menu Grid */}
@@ -913,117 +360,404 @@ export default function OrderView() {
                     {item.desc && <span className="menu-card__desc">{item.desc}</span>}
                     <span className="menu-card__price">{formatCurrency(item.price)}</span>
                     {item.popular && <span className="menu-card__badge">HOT</span>}
-                    {inCart && (
-                      <span className="menu-card__qty">{inCart.quantity}</span>
-                    )}
+                    {inCart && <span className="menu-card__qty">{inCart.quantity}</span>}
                   </button>
                 );
               })}
             </div>
-          </section>
-        </>
-      )}
-
-      {/* Floating Cart Button (Mobile) */}
-      {cartCount > 0 && (
-        <button className="fab-cart" id="fab-cart" onClick={() => setShowCart(true)}>
-          <ShoppingCart size={18} />
-          <span className="fab-cart__count">{cartCount}</span>
-          <span className="fab-cart__total">{formatCurrency(cartTotal)}</span>
-        </button>
-      )}
-
-      {/* Cart Panel */}
-      {(showCart || cartCount > 0) && (
-        <aside className={`cart-panel ${showCart ? 'cart-panel--open' : ''}`} id="cart-panel">
-          <div className="cart-panel__header">
-            <h3>
-              {canAddMore
-                ? <><PlusCircle size={16} /> Thêm món - {selectedTable?.name}</>
-                : <><ShoppingCart size={16} /> Đơn hàng ({cartCount})</>
-              }
-            </h3>
-            <button className="modal-close cart-panel__close-mobile" onClick={() => setShowCart(false)}>
-              <X size={16} />
-            </button>
           </div>
 
-          {selectedTable && (
-            <div className="cart-table-info">
-              <span>{selectedTable.name}</span>
-              <span><Users size={12} /> {selectedTable.guestCount}</span>
-              {selectedStaffId && <span><UserRound size={12} /> {staffName(selectedStaffId)}</span>}
+          {/* ── RIGHT PANEL: Cart / Order ── */}
+          <div className="ov-right">
+            {/* Right Header — Table info */}
+            <div className="ov-right__header">
+              {selectedTable ? (
+                <>
+                  <div className="ov-right__table-info">
+                    <span className="ov-right__table-name">{selectedTable.name}</span>
+                    <span className={`ov-right__table-status ov-right__table-status--${TABLE_STATUS_CONFIG[selectedTable.status]?.color}`}>
+                      {TABLE_STATUS_CONFIG[selectedTable.status]?.label}
+                    </span>
+                  </div>
+                  <div className="ov-right__meta">
+                    <span><Users size={13} /> {selectedTable.guestCount || 0}</span>
+                    {tableOrder && <span><Clock size={13} /> {new Date(tableOrder.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>}
+                  </div>
+                </>
+              ) : (
+                <span className="ov-right__no-table">Chọn bàn từ Sơ đồ để order</span>
+              )}
             </div>
-          )}
 
-          {cart.length === 0 ? (
-            <div className="cart-empty">
-              <Utensils size={32} strokeWidth={1.5} className="cart-empty__icon" />
-              <p>Chưa có món nào</p>
-              <p className="cart-empty__hint">Chọn món từ thực đơn bên trái</p>
+            {/* Items Table Header */}
+            <div className="ov-right__items-header">
+              <span className="col-name">Tên món</span>
+              <span className="col-qty">SL</span>
+              <span className="col-price">Thành tiền</span>
+              <span className="col-del"></span>
             </div>
-          ) : (
-            <>
-              <div className="cart-items-header">
-                <span className="cart-items-header__name">Tên món</span>
-                <span className="cart-items-header__qty">SL</span>
-                <span className="cart-items-header__price">Thành tiền</span>
-                <span className="cart-items-header__del"></span>
+
+            {/* Items Body (scrollable) */}
+            <div className="ov-right__items-body">
+              {/* Existing order items */}
+              {tableOrder && tableOrder.items.map((item, i) => (
+                <div key={`order-${i}`} className="ov-item ov-item--existing">
+                  <span className="col-name">{item.name} {item.note && <em className="ov-item__note">» {item.note}</em>}</span>
+                  <span className="col-qty">{item.quantity}</span>
+                  <span className="col-price">{formatCurrency(item.price * item.quantity)}</span>
+                  <button
+                    className="ov-item__del"
+                    title="Xoá món (cần mật khẩu admin)"
+                    onClick={() => setPendingDeleteItem({ orderId: tableOrder.id, itemIndex: i, itemName: item.name })}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+
+              {/* Separator between existing + new cart items */}
+              {tableOrder && cart.length > 0 && (
+                <div className="ov-item-separator">
+                  <PlusCircle size={12} /> Món mới thêm
+                </div>
+              )}
+
+              {/* Cart items (new) */}
+              {cart.map(c => (
+                <div key={`cart-${c.itemId}`} className="ov-item ov-item--new">
+                  <div className="col-name">
+                    <span>{c.name}</span>
+                    <input 
+                      type="text" 
+                      className="ov-item__note-input"
+                      placeholder="Ghi chú..."
+                      value={c.note || ''}
+                      onChange={(e) => updateCartItemNote(c.itemId, e.target.value)}
+                    />
+                  </div>
+                  <div className="col-qty">
+                    <div className="ov-item__qty-controls">
+                      <button className="qty-btn qty-btn--sm" onClick={() => updateCartQty(c.itemId, -1)}><Minus size={12} /></button>
+                      <span>{c.quantity}</span>
+                      <button className="qty-btn qty-btn--sm" onClick={() => updateCartQty(c.itemId, +1)}><Plus size={12} /></button>
+                    </div>
+                  </div>
+                  <span className="col-price">{formatCurrency(c.price * c.quantity)}</span>
+                  <button className="ov-item__del" onClick={() => removeFromCart(c.itemId)}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+
+              {/* Empty state */}
+              {!tableOrder && cart.length === 0 && (
+                <div className="ov-right__empty">
+                  <Utensils size={40} strokeWidth={1.2} />
+                  <p>Vui lòng chọn món phía bên trái để ghi order</p>
+                </div>
+              )}
+            </div>
+
+            {/* ── Right Footer ── */}
+            <div className="ov-right__footer">
+              {/* Staff + Total */}
+              <div className="ov-right__footer-info">
+                <div className="staff-select" id="staff-select">
+                  <UserRound size={14} className="staff-select__icon" />
+                  <select
+                    className="staff-select__dropdown"
+                    value={selectedStaffId || ''}
+                    onChange={e => setSelectedStaff(e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">Chọn NV</option>
+                    {STAFF_LIST.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="ov-right__total">
+                  <span>Tổng tiền</span>
+                  <span className="ov-right__total-amount">
+                    {formatCurrency((tableOrder?.total || 0) + cartTotal)}
+                  </span>
+                </div>
               </div>
-              <div className="cart-items">
-                {cart.map(c => (
-                  <div key={c.itemId} className="cart-item">
-                    <div className="cart-item__info">
-                      <img className="cart-item__image" src={c.image} alt={c.name} />
-                      <div>
-                        <span className="cart-item__name">{c.name}</span>
-                        <input 
-                          type="text" 
-                          className="cart-item__note-input"
-                          placeholder="Ghi chú món (ít bún...)"
-                          value={c.note || ''}
-                          onChange={(e) => updateCartItemNote(c.itemId, e.target.value)}
-                        />
-                        <span className="cart-item__unit-price">{formatCurrency(c.price)}</span>
-                      </div>
-                    </div>
-                    <div className="cart-item__qty-controls">
-                      <button className="qty-btn" onClick={() => updateCartQty(c.itemId, -1)}><Minus size={14} /></button>
-                      <span className="qty-value">{c.quantity}</span>
-                      <button className="qty-btn" onClick={() => updateCartQty(c.itemId, +1)}><Plus size={14} /></button>
-                    </div>
-                    <span className="cart-item__subtotal">{formatCurrency(c.price * c.quantity)}</span>
-                    <button className="cart-item__remove" onClick={() => removeFromCart(c.itemId)}>
-                      <Trash2 size={14} />
+
+              {/* Payment Mode — inline controls */}
+              {showPaymentMode && tableOrder && (
+                <div className="ov-payment-inline">
+                  <div className="payment-method__options">
+                    <button
+                      className={`payment-method__btn ${paymentMethod === 'cash' ? 'payment-method__btn--active' : ''}`}
+                      onClick={() => setPaymentMethod('cash')}
+                    >
+                      <Banknote size={18} /> Tiền mặt
+                    </button>
+                    <button
+                      className={`payment-method__btn ${paymentMethod === 'transfer' ? 'payment-method__btn--active' : ''}`}
+                      onClick={() => setPaymentMethod('transfer')}
+                    >
+                      <Landmark size={18} /> Chuyển khoản
                     </button>
                   </div>
-                ))}
-              </div>
-
-
-              <div className="cart-footer">
-                <div className="cart-total">
-                  <span>Tổng tiền</span>
-                  <span className="cart-total__amount">{formatCurrency(cartTotal)}</span>
+                  <div className="ov-payment-inline__row">
+                    <label className="ov-payment-inline__print">
+                      <input 
+                        type="checkbox" 
+                        checked={printReceiptOnPay} 
+                        onChange={() => setPrintReceiptOnPay(!printReceiptOnPay)} 
+                      />
+                      In bill
+                    </label>
+                    <button className="btn btn--secondary btn--sm" onClick={() => handlePrePrint(tableOrder.id)}>
+                      <Printer size={13} /> In tạm
+                    </button>
+                  </div>
+                  <div className="ov-payment-inline__actions">
+                    <button className="btn btn--secondary btn--sm" onClick={() => { setActionModal('transfer'); }}>
+                      <ArrowRightLeft size={13} /> Chuyển bàn
+                    </button>
+                    <button className="btn btn--secondary btn--sm" onClick={() => { setSplitSelected([]); setActionModal('split'); }}>
+                      <Scissors size={13} /> Tách bill
+                    </button>
+                    <button className="btn btn--secondary btn--sm" onClick={() => { setMergeSelected([]); setActionModal('merge'); }}>
+                      <Merge size={13} /> Gộp bill
+                    </button>
+                  </div>
                 </div>
-                <div className="cart-footer__buttons">
-                  <button className="btn btn--secondary btn--sm" onClick={() => clearCart()}>
-                    <X size={13} /> Huỷ bỏ
-                  </button>
-                  <button className="btn btn--outline btn--sm" onClick={handleSaveDraft}>
-                    <Save size={13} /> Tạm lưu
-                  </button>
-                  <button className="btn btn--primary btn--lg btn--full" id="btn-send-kitchen" onClick={handleSendOrder}>
-                    <ArrowUpFromLine size={16} /> {canAddMore ? 'Gửi thêm cho bếp' : 'Gửi cho bếp'}
-                  </button>
-                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="ov-right__actions">
+                {cart.length > 0 ? (
+                  <>
+                    <button className="btn btn--action btn--send" id="btn-send-kitchen" onClick={handleSendOrder}>
+                      <ArrowUpFromLine size={16} /> {canAddMore ? 'Gửi thêm bếp' : 'Gửi bếp'}
+                    </button>
+                    <button className="btn btn--action btn--cancel" onClick={() => clearCart()}>
+                      <X size={16} /> Huỷ bỏ
+                    </button>
+                  </>
+                ) : tableOrder ? (
+                  <>
+                    {showPaymentMode ? (
+                      <>
+                        <button className="btn btn--action btn--pay" id="btn-pay" onClick={() => handlePay(tableOrder.id)}>
+                          <CircleDollarSign size={16} /> Thu tiền
+                        </button>
+                        <button className="btn btn--action btn--cancel" onClick={() => setShowPaymentMode(false)}>
+                          <X size={16} /> Đóng
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button className="btn btn--action btn--pay" onClick={() => setShowPaymentMode(true)}>
+                          <CircleDollarSign size={16} /> Tính tiền
+                        </button>
+                        <button className="btn btn--action btn--cancel" onClick={() => selectTable(null)}>
+                          <X size={16} /> Bỏ chọn
+                        </button>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="ov-right__actions-placeholder">
+                    Chọn bàn và chọn món để thao tác
+                  </div>
+                )}
               </div>
-            </>
-          )}
-        </aside>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Served Orders Notification Bar Removed */}
+      {/* ===== MODALS (kept as-is, outside layout) ===== */}
+
+      {/* Admin Password Modal for item removal */}
+      {pendingDeleteItem && (
+        <div className="modal-overlay" onClick={() => { setPendingDeleteItem(null); setAdminPassInput(''); }}>
+          <div className="admin-pass-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-pass-modal__header">
+              <h3><Lock size={18} /> Xác nhận xoá món</h3>
+              <button className="modal-close" onClick={() => { setPendingDeleteItem(null); setAdminPassInput(''); }}><X size={16} /></button>
+            </div>
+            <div className="admin-pass-modal__body">
+              <p className="admin-pass-modal__msg">
+                Xoá <strong>{pendingDeleteItem.itemName}</strong> khỏi đơn hàng?
+              </p>
+              <label className="admin-pass-modal__label">Mật khẩu Admin</label>
+              <input
+                type="password"
+                className="admin-pass-modal__input"
+                placeholder="Nhập mật khẩu..."
+                value={adminPassInput}
+                onChange={e => setAdminPassInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    if (adminPassInput === 'admin123') {
+                      removeItemFromOrder(pendingDeleteItem.orderId, pendingDeleteItem.itemIndex);
+                      addToast(`Đã xoá: ${pendingDeleteItem.itemName}`, 'info');
+                      setPendingDeleteItem(null);
+                      setAdminPassInput('');
+                    } else {
+                      addToast('Sai mật khẩu!', 'warning');
+                      setAdminPassInput('');
+                    }
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+            <div className="admin-pass-modal__actions">
+              <button className="btn btn--secondary" onClick={() => { setPendingDeleteItem(null); setAdminPassInput(''); }}>Huỷ</button>
+              <button className="btn btn--danger" onClick={() => {
+                if (adminPassInput === 'admin123') {
+                  removeItemFromOrder(pendingDeleteItem.orderId, pendingDeleteItem.itemIndex);
+                  addToast(`Đã xoá: ${pendingDeleteItem.itemName}`, 'info');
+                  setPendingDeleteItem(null);
+                  setAdminPassInput('');
+                } else {
+                  addToast('Sai mật khẩu!', 'warning');
+                  setAdminPassInput('');
+                }
+              }}>
+                <Trash2 size={16} /> Xác nhận xoá
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Table Modal */}
+      {actionModal === 'transfer' && tableOrder && (
+        <div className="modal-overlay" onClick={() => setActionModal(null)}>
+          <div className="admin-pass-modal" style={{ minWidth: '360px', maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
+            <div className="admin-pass-modal__header">
+              <h3><ArrowRightLeft size={18} /> Chuyển bàn — {selectedTable?.name}</h3>
+              <button className="modal-close" onClick={() => setActionModal(null)}><X size={16} /></button>
+            </div>
+            <div className="admin-pass-modal__body" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <p style={{ marginBottom: '12px', color: 'var(--color-text-muted)', fontSize: '14px' }}>Chọn bàn trống để chuyển đơn sang:</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                {tables.filter(t => t.status === 'empty' && t.id !== selectedTableId).map(t => (
+                  <button
+                    key={t.id}
+                    className="btn btn--secondary"
+                    style={{ padding: '14px 8px', fontSize: '14px', fontWeight: 600 }}
+                    onClick={async () => {
+                      await transferTable(tableOrder.id, selectedTableId, t.id);
+                      setActionModal(null);
+                      setShowPaymentMode(false);
+                    }}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+              {tables.filter(t => t.status === 'empty' && t.id !== selectedTableId).length === 0 && (
+                <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '20px 0' }}>Không có bàn trống nào</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Split Bill Modal */}
+      {actionModal === 'split' && tableOrder && (
+        <div className="modal-overlay" onClick={() => setActionModal(null)}>
+          <div className="admin-pass-modal" style={{ minWidth: '400px', maxWidth: '550px' }} onClick={e => e.stopPropagation()}>
+            <div className="admin-pass-modal__header">
+              <h3><Scissors size={18} /> Tách bill — {selectedTable?.name}</h3>
+              <button className="modal-close" onClick={() => setActionModal(null)}><X size={16} /></button>
+            </div>
+            <div className="admin-pass-modal__body" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+              <p style={{ marginBottom: '12px', color: 'var(--color-text-muted)', fontSize: '14px' }}>Chọn món để tách ra:</p>
+              {tableOrder.items.map((item, idx) => (
+                <label key={idx} style={{
+                  display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px',
+                  borderBottom: '1px solid var(--color-divider)', cursor: 'pointer',
+                  background: splitSelected.includes(idx) ? 'rgba(59,130,246,0.08)' : 'transparent',
+                  borderRadius: '6px', marginBottom: '2px'
+                }}>
+                  <input type="checkbox" checked={splitSelected.includes(idx)} onChange={() => {
+                    setSplitSelected(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
+                  }} style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)' }} />
+                  <span style={{ flex: 1, fontWeight: 500 }}>{item.name} ×{item.quantity}</span>
+                  <span style={{ color: 'var(--color-text-muted)', fontSize: '13px' }}>{formatCurrency(item.price * item.quantity)}</span>
+                </label>
+              ))}
+              {splitSelected.length > 0 && (
+                <>
+                  <div style={{ margin: '16px 0 8px', fontWeight: 600, fontSize: '14px' }}>Chuyển {splitSelected.length} món sang bàn:</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                    {tables.filter(t => t.status === 'empty' && t.id !== selectedTableId).map(t => (
+                      <button key={t.id} className="btn btn--primary btn--sm" style={{ padding: '10px 6px' }} onClick={async () => {
+                        const ok = await splitBill(tableOrder.id, splitSelected, t.id);
+                        if (ok) { setActionModal(null); setShowPaymentMode(false); }
+                      }}>{t.name}</button>
+                    ))}
+                  </div>
+                  {tables.filter(t => t.status === 'empty' && t.id !== selectedTableId).length === 0 && (
+                    <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '12px 0' }}>Không có bàn trống</p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Merge Bill Modal */}
+      {actionModal === 'merge' && tableOrder && (() => {
+        const otherActiveOrders = orders.filter(o => o.status === 'done' && o.id !== tableOrder.id);
+        return (
+          <div className="modal-overlay" onClick={() => setActionModal(null)}>
+            <div className="admin-pass-modal" style={{ minWidth: '400px', maxWidth: '550px' }} onClick={e => e.stopPropagation()}>
+              <div className="admin-pass-modal__header">
+                <h3><Merge size={18} /> Gộp bill vào — {selectedTable?.name}</h3>
+                <button className="modal-close" onClick={() => setActionModal(null)}><X size={16} /></button>
+              </div>
+              <div className="admin-pass-modal__body" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                <p style={{ marginBottom: '12px', color: 'var(--color-text-muted)', fontSize: '14px' }}>Chọn bàn muốn gộp vào bàn {selectedTable?.name}:</p>
+                {otherActiveOrders.length === 0 ? (
+                  <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '20px 0' }}>Không có bàn nào khác đang có đơn</p>
+                ) : (
+                  otherActiveOrders.map(o => (
+                    <label key={o.id} style={{
+                      display: 'flex', alignItems: 'center', gap: '10px', padding: '12px',
+                      borderBottom: '1px solid var(--color-divider)', cursor: 'pointer',
+                      background: mergeSelected.includes(o.id) ? 'rgba(59,130,246,0.08)' : 'transparent',
+                      borderRadius: '6px', marginBottom: '2px'
+                    }}>
+                      <input type="checkbox" checked={mergeSelected.includes(o.id)} onChange={() => {
+                        setMergeSelected(prev => prev.includes(o.id) ? prev.filter(i => i !== o.id) : [...prev, o.id]);
+                      }} style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)' }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600 }}>{o.tableName || 'Bàn ?'}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                          {o.items.map(i => `${i.name}×${i.quantity}`).join(', ')}
+                        </div>
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-primary)' }}>{formatCurrency(o.total)}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+              {mergeSelected.length > 0 && (
+                <div className="admin-pass-modal__actions">
+                  <button className="btn btn--secondary" onClick={() => setActionModal(null)}>Huỷ</button>
+                  <button className="btn btn--primary" onClick={async () => {
+                    const ok = await mergeBills(tableOrder.id, mergeSelected);
+                    if (ok) { setActionModal(null); setShowPaymentMode(false); }
+                  }}>
+                    <Merge size={16} /> Gộp {mergeSelected.length} bàn
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
