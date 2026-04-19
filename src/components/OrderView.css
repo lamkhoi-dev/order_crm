@@ -5,7 +5,7 @@
 .order-view {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 56px);
+  flex: 1;
   overflow: hidden;
   animation: fadeIn var(--duration-normal) var(--ease-out);
 }
