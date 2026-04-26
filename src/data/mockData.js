@@ -126,10 +126,11 @@ export const TABLE_AREAS = [
 export const INITIAL_TABLES = []; // Handled by backend
 
 export const TABLE_STATUS_CONFIG = {
-  empty:    { label: 'Trống',     color: 'empty',    icon: '○' },
-  ordering: { label: 'Đang gọi', color: 'ordering', icon: '●' },
-  waiting:  { label: 'Chờ món',  color: 'waiting',  icon: '●' },
-  served:   { label: 'Đã ra',    color: 'served',   icon: '●' },
+  empty:    { label: 'Trống',       color: 'gray',   icon: '○' },
+  ordering: { label: 'Đang gọi',   color: 'blue',   icon: '●' },
+  waiting:  { label: 'Chờ món',     color: 'blue',   icon: '●' },
+  served:   { label: 'Có khách',    color: 'green',  icon: '●' },
+  billing:  { label: 'Tính tiền',   color: 'amber',  icon: '●' },
 };
 
 export function formatCurrency(amount) {

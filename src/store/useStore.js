@@ -263,18 +263,20 @@ const useStore = create((set, get) => ({
 
     const table = tables.find(t => t.id === selectedTableId);
     const orderId = generateOrderId();
+    // Deep clone cart items to prevent mutation
+    const clonedItems = cart.map(c => ({ ...c }));
     const order = {
       id: orderId,
       tableId: selectedTableId,
       tableName: table.name,
-      items: [...cart],
+      items: clonedItems,
       note: cartNote,
       staffId: selectedStaffId,
       staffName: null,
       orderType,
       guestCount: table.guestCount || table.guest_count || 0,
       status: 'done',
-      total: cart.reduce((sum, c) => sum + c.price * c.quantity, 0),
+      total: clonedItems.reduce((sum, c) => sum + c.price * c.quantity, 0),
       createdAt: new Date().toISOString(),
       completedAt: new Date().toISOString(),
       paidAt: null,
@@ -290,7 +292,6 @@ const useStore = create((set, get) => ({
       tables: newTables,
       cart: [],
       cartNote: '',
-      selectedTableId: null,
     });
 
     // Persist
@@ -303,28 +304,33 @@ const useStore = create((set, get) => ({
     const { cart, cartNote } = get();
     if (!cart.length) return false;
 
+    // Snapshot cart BEFORE clearing (prevents race condition)
+    const cartSnapshot = cart.map(c => ({ ...c }));
+    const noteSnapshot = cartNote;
+
     const orders = get().orders.map(o => {
       if (o.id !== orderId) return o;
-      const mergedItems = [...o.items];
-      cart.forEach(cartItem => {
-        const existing = mergedItems.find(mi => mi.itemId === cartItem.itemId);
-        if (existing) {
+      // Deep clone existing items to avoid mutating Zustand state
+      const mergedItems = o.items.map(item => ({ ...item }));
+      cartSnapshot.forEach(cartItem => {
+        const existing = mergedItems.find(mi => mi.itemId === cartItem.itemId && !cartItem.note);
+        if (existing && !existing.note) {
           existing.quantity += cartItem.quantity;
         } else {
           mergedItems.push({ ...cartItem });
         }
       });
       const newTotal = mergedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-      const newNote = [o.note, cartNote].filter(Boolean).join(' | ');
+      const newNote = [o.note, noteSnapshot].filter(Boolean).join(' | ');
       return { ...o, items: mergedItems, total: newTotal, note: newNote, status: 'done' };
     });
 
     set({ orders, cart: [], cartNote: '' });
 
-    // Persist
+    // Persist with snapshot (not cleared cart)
     api(`/orders/${orderId}/items`, {
       method: 'POST',
-      body: { items: cart, note: cartNote },
+      body: { items: cartSnapshot, note: noteSnapshot },
     }).catch(console.error);
 
     return true;

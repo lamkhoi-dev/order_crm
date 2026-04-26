@@ -1,0 +1,12 @@
+- xem lại thông tin, tính tiền, đã tính, chưa tính ...
+
+Có khách ngồi cho khác màu , trống( xám), đang tính tiền ( cam) , có bàn màu xanh
+
+-Tab order để những bàn còn lại chưa thanh toán
+-Xoá 1 bàn có mk( yêu cầu pass)
+- Lịch sử bàn k phân chia theo ngày( 
+- Báo cáo thời vô ra rõ ràng, có ngày giờ
+- Báo cáo thu chi 
+- Đầu ca cuối ca, chênh lệch
+- thêm món bị lỗi
+- Bị lỗi mất món rất nhiều, thêm món vào, chọn món các kiểu, lúc thanh toán thì tính thiếu món

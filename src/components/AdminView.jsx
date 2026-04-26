@@ -274,60 +274,84 @@ export default function AdminView() {
         )}
       </div>
 
-      {/* Order History */}
+      {/* Order History — Grouped by Date */}
       <div className="admin-section" id="order-history-section">
-        <h3 className="admin-section__title"><ClipboardList size={16} /> Lịch sử đơn hàng</h3>
-        {orders.length === 0 ? (
+        <h3 className="admin-section__title"><ClipboardList size={16} /> Lịch sử đơn hàng ({filteredOrders.length})</h3>
+        {filteredOrders.length === 0 ? (
           <div className="admin-empty">
             <ClipboardList size={32} strokeWidth={1.5} />
             <p>Chưa có đơn hàng nào</p>
           </div>
-        ) : (
-          <div className="order-history">
-            {[...orders].reverse().map(order => (
-              <div key={order.id} className="order-row" id={`order-row-${order.id}`}>
-                <div className="order-row__main">
-                  <span className={`order-row__status order-row__status--${order.status}`}>
-                    {order.status === 'pending' && <Timer size={16} />}
-                    {order.status === 'cooking' && <Flame size={16} />}
-                    {order.status === 'done' && <CircleCheck size={16} />}
-                    {order.status === 'paid' && <Banknote size={16} />}
-                  </span>
-                  <div className="order-row__info">
-                    <span className="order-row__id">{order.id}</span>
-                    <span className="order-row__table">{order.tableName}</span>
+        ) : (() => {
+          // Group orders by date
+          const grouped = {};
+          [...filteredOrders].reverse().forEach(order => {
+            const dateStr = order.createdAt || order.created_at;
+            const dateKey = dateStr ? dateStr.split('T')[0] : 'unknown';
+            if (!grouped[dateKey]) grouped[dateKey] = [];
+            grouped[dateKey].push(order);
+          });
+          return (
+            <div className="order-history">
+              {Object.entries(grouped).map(([dateKey, dateOrders]) => (
+                <div key={dateKey}>
+                  <div className="order-history__date-header">
+                    <Calendar size={14} />
+                    <span>{dateKey === 'unknown' ? 'Không rõ ngày' : new Date(dateKey + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                    <span className="order-history__date-count">{dateOrders.length} đơn</span>
                   </div>
-                </div>
-                <div className="order-row__items">
-                  {order.items.map((item, i) => (
-                    <span key={i} className="order-row__item-tag">
-                      {item.name} ×{item.quantity}
-                    </span>
+                  {dateOrders.map(order => (
+                    <div key={order.id} className="order-row" id={`order-row-${order.id}`}>
+                      <div className="order-row__main">
+                        <span className={`order-row__status order-row__status--${order.status}`}>
+                          {order.status === 'pending' && <Timer size={16} />}
+                          {order.status === 'cooking' && <Flame size={16} />}
+                          {order.status === 'done' && <CircleCheck size={16} />}
+                          {order.status === 'paid' && <Banknote size={16} />}
+                        </span>
+                        <div className="order-row__info">
+                          <span className="order-row__id">{order.id}</span>
+                          <span className="order-row__table">{order.tableName}</span>
+                        </div>
+                      </div>
+                      <div className="order-row__items">
+                        {order.items.map((item, i) => (
+                          <span key={i} className="order-row__item-tag">
+                            {item.name} ×{item.quantity}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="order-row__extra">
+                        {order.guestCount > 0 && <span><Users size={11} /> {order.guestCount}</span>}
+                        {order.staffId && <span><UserRound size={11} /> {STAFF_LIST.find(s => s.id === order.staffId)?.name}</span>}
+                        {order.orderType && order.orderType !== 'dine_in' && (
+                          <span>{ORDER_TYPES.find(t => t.id === order.orderType)?.label}</span>
+                        )}
+                      </div>
+                      <div className="order-row__meta">
+                        <span className="order-row__total">{formatCurrency(order.total)}</span>
+                        {order.paymentMethod && (
+                          <span className={`order-row__payment order-row__payment--${order.paymentMethod}`}>
+                            {order.paymentMethod === 'cash' ? <Banknote size={11} /> : <Landmark size={11} />}
+                            {order.paymentMethod === 'cash' ? 'TM' : 'CK'}
+                          </span>
+                        )}
+                        <span className="order-row__time" title="Giờ tạo đơn">
+                          Vào: {new Date(order.createdAt || order.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        {(order.paidAt || order.paid_at) && (
+                          <span className="order-row__time order-row__time--paid" title="Giờ thanh toán">
+                            Ra: {new Date(order.paidAt || order.paid_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
-                <div className="order-row__extra">
-                  {order.guestCount > 0 && <span><Users size={11} /> {order.guestCount}</span>}
-                  {order.staffId && <span><UserRound size={11} /> {STAFF_LIST.find(s => s.id === order.staffId)?.name}</span>}
-                  {order.orderType && order.orderType !== 'dine_in' && (
-                    <span>{ORDER_TYPES.find(t => t.id === order.orderType)?.label}</span>
-                  )}
-                </div>
-                <div className="order-row__meta">
-                  <span className="order-row__total">{formatCurrency(order.total)}</span>
-                  {order.paymentMethod && (
-                    <span className={`order-row__payment order-row__payment--${order.paymentMethod}`}>
-                      {order.paymentMethod === 'cash' ? <Banknote size={11} /> : <Landmark size={11} />}
-                      {order.paymentMethod === 'cash' ? 'TM' : 'CK'}
-                    </span>
-                  )}
-                  <span className="order-row__time">
-                    {new Date(order.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          );
+        })()}
       </div>
       </>
       )}

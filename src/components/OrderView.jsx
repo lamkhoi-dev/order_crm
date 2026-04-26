@@ -38,6 +38,7 @@ export default function OrderView() {
   const deleteDraft = useStore(s => s.deleteDraft);
   const addItemsToOrder = useStore(s => s.addItemsToOrder);
   const removeItemFromOrder = useStore(s => s.removeItemFromOrder);
+  const updateTable = useStore(s => s.updateTable);
   const transferTable = useStore(s => s.transferTable);
   const splitBill = useStore(s => s.splitBill);
   const mergeBills = useStore(s => s.mergeBills);
@@ -61,7 +62,7 @@ export default function OrderView() {
   const tableOrder = selectedTable?.orderId
     ? orders.find(o => o.id === selectedTable.orderId)
     : null;
-  const canAddMore = selectedTable && (selectedTable.status === 'waiting' || selectedTable.status === 'served') && tableOrder;
+  const canAddMore = selectedTable && ['waiting', 'served', 'billing'].includes(selectedTable.status) && tableOrder;
 
   const filteredItems = useMemo(() => {
     let items = menuItems;
@@ -114,10 +115,11 @@ export default function OrderView() {
     if (!selectedTableId) { addToast('Vui lòng chọn bàn trước!', 'warning'); return; }
     if (!cart.length) { addToast('Vui lòng chọn món!', 'warning'); return; }
     if (canAddMore && tableOrder) {
+      // Snapshot before cart is cleared
+      const kitchenItems = cart.filter(item => !item.no_kitchen);
       const ok = addItemsToOrder(tableOrder.id);
       if (ok) {
         addToast(`Đã thêm món vào đơn ${tableOrder.id}!`, 'success');
-        const kitchenItems = cart.filter(item => !item.no_kitchen);
         if (kitchenItems.length > 0) {
           printKitchenTicket({
             orderId: tableOrder.id + ' (THÊM)',
@@ -385,7 +387,33 @@ export default function OrderView() {
                   </div>
                 </>
               ) : (
-                <span className="ov-right__no-table">Chọn bàn từ Sơ đồ để order</span>
+                <>
+                  <span className="ov-right__no-table">Chọn bàn từ Sơ đồ để order</span>
+                  {/* Active Tables Quick Access */}
+                  {(() => {
+                    const activeTables = tables.filter(t => t.status !== 'empty' && t.orderId);
+                    if (activeTables.length === 0) return null;
+                    return (
+                      <div className="ov-right__active-tables">
+                        <span className="ov-right__active-label">Bàn đang có đơn:</span>
+                        <div className="ov-right__active-list">
+                          {activeTables.map(t => {
+                            const cfg = TABLE_STATUS_CONFIG[t.status];
+                            return (
+                              <button
+                                key={t.id}
+                                className={`ov-right__active-chip ov-right__active-chip--${cfg?.color || 'gray'}`}
+                                onClick={() => handleSelectTable(t.id)}
+                              >
+                                {t.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
               )}
             </div>
 
@@ -545,13 +573,19 @@ export default function OrderView() {
                         <button className="btn btn--action btn--pay" id="btn-pay" onClick={() => handlePay(tableOrder.id)}>
                           <CircleDollarSign size={16} /> Thu tiền
                         </button>
-                        <button className="btn btn--action btn--cancel" onClick={() => setShowPaymentMode(false)}>
+                        <button className="btn btn--action btn--cancel" onClick={() => {
+                          setShowPaymentMode(false);
+                          if (selectedTableId) updateTable(selectedTableId, { status: 'served' });
+                        }}>
                           <X size={16} /> Đóng
                         </button>
                       </>
                     ) : (
                       <>
-                        <button className="btn btn--action btn--pay" onClick={() => setShowPaymentMode(true)}>
+                        <button className="btn btn--action btn--pay" onClick={() => {
+                          setShowPaymentMode(true);
+                          if (selectedTableId) updateTable(selectedTableId, { status: 'billing' });
+                        }}>
                           <CircleDollarSign size={16} /> Tính tiền
                         </button>
                         <button className="btn btn--action btn--cancel" onClick={() => selectTable(null)}>

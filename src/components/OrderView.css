@@ -151,9 +151,10 @@
 .table-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .table-card--selected { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
 
-.table-card--green { border-color: var(--color-success); background: rgba(34,197,94,0.04); }
-.table-card--blue { border-color: var(--color-info); background: rgba(59,130,246,0.04); }
-.table-card--amber { border-color: var(--color-warning); background: rgba(245,158,11,0.04); }
+.table-card--green { border-color: var(--color-success); background: rgba(34,197,94,0.06); }
+.table-card--blue { border-color: var(--color-info); background: rgba(59,130,246,0.06); }
+.table-card--amber { border-color: var(--color-warning); background: rgba(245,158,11,0.06); }
+.table-card--gray { border-color: var(--color-border); background: var(--color-surface); opacity: 0.7; }
 
 .table-card__icon { font-size: 20px; }
 .table-card__name { font-size: var(--text-sm); font-weight: 700; color: var(--color-text); }
@@ -472,6 +473,50 @@
   font-size: var(--text-sm);
   font-style: italic;
 }
+
+/* Active Tables Quick Access */
+.ov-right__active-tables {
+  margin-top: 12px;
+  padding: 10px;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+}
+
+.ov-right__active-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.ov-right__active-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ov-right__active-chip {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ov-right__active-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.ov-right__active-chip--green { border-color: var(--color-success); color: var(--color-success); }
+.ov-right__active-chip--amber { border-color: var(--color-warning); color: var(--color-warning); }
+.ov-right__active-chip--blue { border-color: var(--color-info); color: var(--color-info); }
 
 /* Items Header */
 .ov-right__items-header {
