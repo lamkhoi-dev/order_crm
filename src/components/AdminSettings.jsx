@@ -112,7 +112,12 @@ export default function AdminSettings() {
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
           <h3>Quản lý {activeTab === 'menu' ? 'Thực đơn' : activeTab === 'categories' ? 'Danh mục' : activeTab === 'areas' ? 'Khu vực bàn' : 'Bàn cụ thể'}</h3>
           {!editingItem && (
-            <button className="btn btn--primary btn--sm" onClick={() => setEditingItem({ id: activeTab === 'tables' ? null : '', name: '', order_idx: 0, _isEdit: false, status: 'empty', guest_count: 0 })}>
+            <button className="btn btn--primary btn--sm" onClick={() => {
+              const base = { name: '', _isEdit: false };
+              if (activeTab === 'tables') setEditingItem({ ...base, id: null, area: '', seats: 4, status: 'empty', guest_count: 0 });
+              else if (activeTab === 'menu') setEditingItem({ ...base, id: '', desc: '', price: 0, category: '', image: '', popular: 0, no_kitchen: 0, order_idx: 0 });
+              else setEditingItem({ ...base, id: '', order_idx: 0 });
+            }}>
               <Plus size={16} /> Thêm Mới
             </button>
           )}

@@ -209,15 +209,24 @@ export function getAllMenuItems() {
   return db.prepare('SELECT * FROM menu_items ORDER BY order_idx').all();
 }
 
+const CONFIG_SCHEMAS = {
+  tables: ['id', 'name', 'seats', 'area', 'status', 'order_id', 'guest_count'],
+  categories: ['id', 'name', 'order_idx'],
+  menu_items: ['id', 'name', 'desc', 'price', 'category', 'image', 'popular', 'no_kitchen', 'order_idx'],
+  table_areas: ['id', 'name', 'order_idx']
+};
+
 export function insertEntity(table, data) {
-  const keys = Object.keys(data);
-  const vals = Object.values(data);
+  const allowed = CONFIG_SCHEMAS[table] || [];
+  const keys = Object.keys(data).filter(k => allowed.includes(k));
+  const vals = keys.map(k => data[k]);
   const placeholders = keys.map(() => '?').join(',');
   db.prepare(`INSERT INTO ${table} (${keys.join(',')}) VALUES (${placeholders})`).run(...vals);
   return data;
 }
 export function updateEntity(table, id, data) {
-  const keys = Object.keys(data).filter(k => k !== 'id');
+  const allowed = CONFIG_SCHEMAS[table] || [];
+  const keys = Object.keys(data).filter(k => allowed.includes(k) && k !== 'id');
   const vals = keys.map(k => data[k]);
   const setString = keys.map(k => `${k} = ?`).join(',');
   db.prepare(`UPDATE ${table} SET ${setString} WHERE id = ?`).run(...vals, id);
