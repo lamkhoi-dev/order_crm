@@ -143,8 +143,11 @@ export function formatCurrency(amount) {
 
 export function generateOrderId() {
   const now = new Date();
-  const h = String(now.getHours()).padStart(2, '0');
-  const m = String(now.getMinutes()).padStart(2, '0');
-  const r = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-  return `ORD-${h}${m}-${r}`;
+  const MM = String(now.getMonth() + 1).padStart(2, '0');
+  const DD = String(now.getDate()).padStart(2, '0');
+  const h  = String(now.getHours()).padStart(2, '0');
+  const m  = String(now.getMinutes()).padStart(2, '0');
+  const ms = String(now.getMilliseconds()).padStart(3, '0');
+  // Format: ORD-MMDD-HHmm-ms  → unique across days & nearly impossible to collide
+  return `ORD-${MM}${DD}-${h}${m}-${ms}`;
 }

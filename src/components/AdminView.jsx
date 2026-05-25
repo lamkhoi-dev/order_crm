@@ -27,11 +27,15 @@ export default function AdminView() {
       if (filterType === 'all') return true;
       const orderDateStr = o.createdAt || o.created_at;
       if (!orderDateStr) return false;
+      // Convert to Vietnam local date (UTC+7) before comparing
+      const d = new Date(orderDateStr);
+      const vnDate = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+      const vnDateStr = vnDate.toISOString(); // YYYY-MM-DDTHH... in VN time
       if (filterType === 'day') {
-        return orderDateStr.startsWith(filterDate);
+        return vnDateStr.startsWith(filterDate);
       }
       if (filterType === 'month') {
-        return orderDateStr.startsWith(filterMonth);
+        return vnDateStr.startsWith(filterMonth);
       }
       return true;
     });
@@ -287,11 +291,17 @@ export default function AdminView() {
             <p>Chưa có đơn hàng nào</p>
           </div>
         ) : (() => {
-          // Group orders by date
+          // Group orders by date — use Vietnam timezone (UTC+7)
           const grouped = {};
           [...filteredOrders].reverse().forEach(order => {
             const dateStr = order.createdAt || order.created_at;
-            const dateKey = dateStr ? dateStr.split('T')[0] : 'unknown';
+            let dateKey = 'unknown';
+            if (dateStr) {
+              // Convert to Vietnam local date (UTC+7) to avoid grouping midnight orders on wrong day
+              const d = new Date(dateStr);
+              const vnDate = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+              dateKey = vnDate.toISOString().split('T')[0]; // YYYY-MM-DD in VN time
+            }
             if (!grouped[dateKey]) grouped[dateKey] = [];
             grouped[dateKey].push(order);
           });
