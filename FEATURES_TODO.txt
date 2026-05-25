@@ -1,0 +1,146 @@
+====================================================
+  ORDER_CRM — DANH SÁCH TÍNH NĂNG CẦN BỔ SUNG
+  Cập nhật: 15/05/2026
+====================================================
+
+[ ĐÃ CÓ - KHÔNG CẦN LÀM ]
+----------------------------------------------------
+- Xem menu & gọi món (staff)
+- Chọn số lượng
+- Ghi chú từng món (ít cay, không hành, v.v.)
+- Gọi thêm món trong khi đang ăn
+- Đồng bộ bếp (KitchenView)
+- Trạng thái đơn: pending / cooking / done / paid
+- Hiển thị thời gian tạo đơn
+- Quản lý bàn theo khu vực (A, B, S, MV)
+- Trạng thái bàn: Trống / Đang phục vụ
+- Chuyển bàn
+- Tách hóa đơn (split bill)
+- Gộp hóa đơn (merge bill)
+- Thanh toán: Tiền mặt / Chuyển khoản
+- Thống kê doanh thu theo ngày / tháng
+- Món bán chạy
+- Giờ cao điểm
+- Xuất Excel báo cáo
+- Quản lý ca làm việc (mở/đóng ca, thu/chi)
+- Phân luồng bếp/bar (flag no_kitchen)
+- Cài đặt menu, danh mục, khu vực bàn
+
+
+[ CẦN BỔ SUNG ]
+====================================================
+
+1. QR CODE TỰ ORDER (KHÁCH TỰ ĐẶT)
+   Ưu tiên: CAO | Ước tính: 2-3 ngày
+----------------------------------------------------
+   - Tạo route /order/:tableId (trang public, không cần đăng nhập)
+   - Giao diện GuestOrderView thân thiện mobile
+   - API POST /api/guest-order nhận order từ khách
+   - Sinh QR code cho từng bàn (thư viện qrcode.react)
+   - In / hiển thị QR trong trang AdminSettings
+   - Logic merge guest order vào order hiện tại nếu bàn đang có khách
+
+
+2. PHÂN QUYỀN NHÂN VIÊN THỰC SỰ (PIN LOGIN)
+   Ưu tiên: CAO | Ước tính: 2 ngày
+----------------------------------------------------
+   - Hiện tại chỉ là role localStorage (ai cũng đổi được — không an toàn)
+   - Tạo bảng DB: staff (id, name, pin, role)
+   - Màn hình đăng nhập bằng mã PIN (4-6 số)
+   - Role: cashier / waiter / kitchen / manager
+     + cashier:  Order + thanh toán
+     + waiter:   Order + chuyển bàn (không thanh toán)
+     + kitchen:  Chỉ xem KitchenView
+     + manager:  Toàn quyền
+   - Gắn staffName thực từ DB vào đơn hàng
+
+
+3. VAT / PHÍ PHỤC VỤ / MÃ GIẢM GIÁ
+   Ưu tiên: TRUNG | Ước tính: 1 ngày
+----------------------------------------------------
+   - Bảng DB mới: settings (key-value)
+   - Cài đặt VAT (%) và service charge (%) trong Admin
+   - Breakdown hóa đơn: tiền món + phí DV + VAT + tổng cuối
+   - Thêm fields vào orders: discount_code, discount_amount, vat, service_charge
+   - Màn hình nhập mã giảm giá khi thanh toán
+   - Bảng DB: discount_codes (code, type, value, is_active)
+
+
+4. THANH TOÁN MỞ RỘNG
+   Ưu tiên: TRUNG | Ước tính: 1 ngày
+----------------------------------------------------
+   - Thêm phương thức: QR ngân hàng, Ví điện tử, Thẻ tín dụng
+   - Tích hợp VietQR API (miễn phí) hiển thị QR động khi thanh toán
+   - Cập nhật báo cáo phân loại theo hình thức mới
+
+
+5. TRẠNG THÁI TỪNG MÓN (item-level status)
+   Ưu tiên: TRUNG | Ước tính: 1 ngày
+----------------------------------------------------
+   - Hiện tại: trạng thái theo cả đơn
+   - Cần: mỗi item có status riêng: pending / cooking / done / served
+   - KitchenView: thêm nút "Xong" cho từng món riêng lẻ
+   - API: PUT /orders/:id/items/:index (cập nhật status từng món)
+   - Store action: updateItemStatus(orderId, itemIndex, status)
+
+
+6. IN TỰ ĐỘNG PHÂN LUỒNG BẾP / BAR
+   Ưu tiên: TRUNG | Ước tính: 1 ngày
+----------------------------------------------------
+   - Flag no_kitchen đã có nhưng chưa tự động in phân luồng
+   - Khi sendOrderToKitchen() → tách: món bếp → in bếp, món bar → in bar
+   - AdminSettings: cài đặt IP máy in bếp + IP máy in bar riêng
+   - Trigger print tự động sau khi POST order thành công
+
+
+7. BÁO CÁO THEO TUẦN
+   Ưu tiên: THẤP | Ước tính: 2-3 giờ
+----------------------------------------------------
+   - Hiện có: lọc theo ngày, lọc theo tháng
+   - Thiếu: lọc theo tuần
+   - Thêm option filterType = 'week'
+   - Input <input type="week"> để chọn tuần
+   - Logic filter order theo ISO week number
+
+
+8. ĐẶT BÀN TRƯỚC (RESERVATION)
+   Ưu tiên: THẤP | Ước tính: 2 ngày
+----------------------------------------------------
+   - Thêm trạng thái 'reserved' cho bàn
+   - Bảng DB: reservations (id, table_id, customer_name, phone, time, note)
+   - Màn hình tạo / xem / hủy đặt bàn trong Admin
+   - Hiển thị badge "Đặt trước" + tên khách trên sơ đồ bàn
+
+
+9. QUẢN LÝ KHO NGUYÊN LIỆU
+   Ưu tiên: THẤP | Ước tính: 4-5 ngày
+----------------------------------------------------
+   - Hoàn toàn chưa có
+   - Bảng DB: ingredients (id, name, unit, quantity, min_threshold)
+   - Bảng DB: menu_item_ingredients (item_id, ingredient_id, amount_per_unit)
+   - Bảng DB: inventory_logs (ingredient_id, type, amount, reason, created_at)
+   - Tự động trừ kho khi order được done
+   - Cảnh báo tồn kho thấp (toast + badge đỏ trên header)
+   - Màn hình Admin: xem tồn kho, nhập kho, lịch sử xuất/nhập
+   - Báo cáo kho
+
+
+====================================================
+  TỔNG KẾT
+====================================================
+
+  Tổng tính năng cần làm:  9 hạng mục
+  Ước tính tổng thời gian: 14-18 ngày dev
+
+  Đề xuất thứ tự làm:
+    1. Báo cáo theo tuần     (nhanh nhất — 2-3 giờ)
+    2. VAT / Giảm giá        (giá trị cao, không quá phức tạp)
+    3. QR khách tự order     (USP lớn nhất của hệ thống)
+    4. Phân quyền PIN        (bảo mật quan trọng)
+    5. Thanh toán mở rộng
+    6. Trạng thái từng món
+    7. In tự động phân luồng
+    8. Đặt bàn trước
+    9. Quản lý kho           (làm sau cùng — phức tạp nhất)
+
+====================================================
