@@ -30,8 +30,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifact
-          cp server/node_modules/better-sqlite3/build/Release/better_sqlite3.node \
-             "artifact/better_sqlite3-win32-x64-node${{ inputs.node-version }}.node"
+          set -x
+          find server/node_modules/better-sqlite3 -name '*.node'
+          SRC=$(find server/node_modules/better-sqlite3 -name '*.node' | head -n1)
+          cp "$SRC" "artifact/better_sqlite3-win32-x64-node${{ inputs.node-version }}.node"
 
       - uses: actions/upload-artifact@v4
         with:
