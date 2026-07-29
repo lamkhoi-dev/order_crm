@@ -49,6 +49,7 @@ export default function OrderView() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [cashReceived, setCashReceived] = useState('');
   const [printReceiptOnPay, setPrintReceiptOnPay] = useState(false);
   const [showPaymentMode, setShowPaymentMode] = useState(false);
   const [tableAreaFilter, setTableAreaFilter] = useState(tableAreas[0]?.id || 'T1');
@@ -90,6 +91,9 @@ export default function OrderView() {
   const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0);
   const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
   const canOrder = selectedTableId != null;
+
+  const changeDue = cashReceived !== '' ? Number(cashReceived) - (tableOrder?.total || 0) : null;
+  const cashInsufficient = paymentMethod === 'cash' && changeDue !== null && changeDue < 0;
 
   useEffect(() => {
     if (tableAreas.length > 0 && !tableAreas.find(a => a.id === tableAreaFilter)) {
@@ -173,9 +177,14 @@ export default function OrderView() {
       staffName: staffName(order.staffId),
     } : null;
     payOrder(orderId, paymentMethod);
-    addToast(`Thanh toán ${methodLabel} thành công!`, 'success');
+    if (paymentMethod === 'cash' && changeDue !== null && changeDue >= 0) {
+      addToast(`Đã thu tiền! Tiền thối lại: ${formatCurrency(changeDue)}`, 'success');
+    } else {
+      addToast(`Thanh toán ${methodLabel} thành công!`, 'success');
+    }
     setShowPaymentMode(false);
     setPaymentMethod('cash');
+    setCashReceived('');
     if (payData && printReceiptOnPay) printReceipt(payData);
   };
 
@@ -530,6 +539,34 @@ export default function OrderView() {
                       <Landmark size={18} /> Chuyển khoản
                     </button>
                   </div>
+
+                  {paymentMethod === 'cash' && (
+                    <div className="cash-received">
+                      <label className="cash-received__label">Tiền khách đưa</label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        className="cash-received__input"
+                        placeholder={`VD: ${tableOrder.total}`}
+                        value={cashReceived}
+                        onChange={e => setCashReceived(e.target.value)}
+                        onFocus={e => e.target.select()}
+                      />
+                      {changeDue !== null && (
+                        changeDue >= 0 ? (
+                          <div className="cash-received__change">
+                            Tiền thối lại: <strong>{formatCurrency(changeDue)}</strong>
+                          </div>
+                        ) : (
+                          <div className="cash-received__change cash-received__change--short">
+                            Còn thiếu: <strong>{formatCurrency(-changeDue)}</strong>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+
                   <div className="ov-payment-inline__row">
                     <label className="ov-payment-inline__print">
                       <input 
@@ -579,11 +616,18 @@ export default function OrderView() {
                   <>
                     {showPaymentMode ? (
                       <>
-                        <button className="btn btn--action btn--pay" id="btn-pay" onClick={() => handlePay(tableOrder.id)}>
+                        <button
+                          className="btn btn--action btn--pay"
+                          id="btn-pay"
+                          disabled={cashInsufficient}
+                          title={cashInsufficient ? 'Số tiền khách đưa chưa đủ' : undefined}
+                          onClick={() => handlePay(tableOrder.id)}
+                        >
                           <CircleDollarSign size={16} /> Thu tiền
                         </button>
                         <button className="btn btn--action btn--cancel" onClick={() => {
                           setShowPaymentMode(false);
+                          setCashReceived('');
                           if (selectedTableId) updateTable(selectedTableId, { status: 'served' });
                         }}>
                           <X size={16} /> Đóng
@@ -593,6 +637,7 @@ export default function OrderView() {
                       <>
                         <button className="btn btn--action btn--pay" onClick={() => {
                           setShowPaymentMode(true);
+                          setCashReceived('');
                           if (selectedTableId) updateTable(selectedTableId, { status: 'billing' });
                         }}>
                           <CircleDollarSign size={16} /> Tính tiền

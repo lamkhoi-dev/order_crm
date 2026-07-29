@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import useStore from '../store/useStore';
-import { formatCurrency, STAFF_LIST, ORDER_TYPES, RESTAURANT_INFO } from '../data/mockData';
+import { formatCurrency, STAFF_LIST, ORDER_TYPES, RESTAURANT_INFO, vnDateStr, vnMonthStr } from '../data/mockData';
 import {
   LayoutDashboard, Trash2, CircleDollarSign, Package, Armchair,
   TrendingUp, Users, ClipboardList, Trophy, Timer, Flame,
@@ -19,23 +19,20 @@ export default function AdminView() {
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [filterType, setFilterType] = useState('all'); // all, day, month
-  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
-  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().split('-').slice(0, 2).join('-'));
+  const [filterDate, setFilterDate] = useState(vnDateStr());
+  const [filterMonth, setFilterMonth] = useState(vnMonthStr());
 
   const filteredOrders = useMemo(() => {
     return orders.filter(o => {
       if (filterType === 'all') return true;
       const orderDateStr = o.createdAt || o.created_at;
       if (!orderDateStr) return false;
-      // Convert to Vietnam local date (UTC+7) before comparing
-      const d = new Date(orderDateStr);
-      const vnDate = new Date(d.getTime() + 7 * 60 * 60 * 1000);
-      const vnDateStr = vnDate.toISOString(); // YYYY-MM-DDTHH... in VN time
+      // Compare using Vietnam local date (UTC+7), not the browser/server's own timezone
       if (filterType === 'day') {
-        return vnDateStr.startsWith(filterDate);
+        return vnDateStr(new Date(orderDateStr)) === filterDate;
       }
       if (filterType === 'month') {
-        return vnDateStr.startsWith(filterMonth);
+        return vnMonthStr(new Date(orderDateStr)) === filterMonth;
       }
       return true;
     });
@@ -43,37 +40,106 @@ export default function AdminView() {
 
   const stats = useMemo(() => getStats(filteredOrders), [filteredOrders, getStats]);
 
+  const MONEY_FMT = '#,##0" đ"';
+
   const exportExcel = () => {
-    const exportData = filteredOrders.map(o => ({
-      'Mã Đơn': o.id,
-      'Khu/Bàn': o.tableName,
-      'Thu Ngân': o.staffName,
-      'Khách': o.guestCount || 0,
-      'Tổng Tiền': o.total,
-      'Thanh Toán': o.paymentMethod === 'cash' ? 'Tiền Mặt' : o.paymentMethod === 'transfer' ? 'Chuyển Khoản' : o.paymentMethod || '',
-      'Món Đã Gọi': (o.items || []).map(i => `${i.quantity}x ${i.name}`).join(' | '),
-      'Giờ Tạo': new Date(o.createdAt || o.created_at).toLocaleString('vi-VN'),
-      'Giờ Hoàn Thành': o.paidAt || o.paid_at ? new Date(o.paidAt || o.paid_at).toLocaleString('vi-VN') : '',
-      'Trạng Thái': o.status === 'paid' ? 'Đã thu tiền' : o.status === 'done' ? 'Đã ra món' : o.status
-    }));
+    const paidOrders = filteredOrders.filter(o => o.status === 'paid');
+    const totalRevenue = paidOrders.reduce((sum, o) => sum + o.total, 0);
+    const avgPerOrder = paidOrders.length ? Math.round(totalRevenue / paidOrders.length) : 0;
+    const periodLabel =
+      filterType === 'day' ? `Theo ngày ${new Date(filterDate + 'T00:00:00').toLocaleDateString('vi-VN')}` :
+      filterType === 'month' ? `Theo tháng ${filterMonth}` :
+      'Toàn bộ thời gian';
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
+    // ───────────── Sheet 1: Tổng Quan ─────────────
+    const overview = [];
+    const moneyCells = []; // cells to reformat as currency after the sheet is built
+    const addRow = (row) => overview.push(row) - 1;
 
-    ws['!cols'] = [
-      { wch: 15 }, // Mã Đơn
-      { wch: 15 }, // Khu/Bàn
-      { wch: 15 }, // Thu Ngân
+    addRow([RESTAURANT_INFO.name]);
+    addRow([RESTAURANT_INFO.address]);
+    addRow([]);
+    addRow(['Kỳ báo cáo', periodLabel]);
+    addRow(['Xuất lúc', new Date().toLocaleString('vi-VN')]);
+    addRow([]);
+    addRow(['CHỈ SỐ TỔNG QUAN']);
+    moneyCells.push({ r: addRow(['Doanh thu', totalRevenue]), c: 1 });
+    addRow(['Số đơn đã thanh toán', paidOrders.length]);
+    addRow(['Tổng số đơn (mọi trạng thái)', filteredOrders.length]);
+    moneyCells.push({ r: addRow(['Giá trị trung bình / đơn', avgPerOrder]), c: 1 });
+    addRow(['Tổng số khách', stats.totalGuests || 0]);
+    addRow([]);
+    addRow(['PHÂN LOẠI ĐƠN']);
+    ORDER_TYPES.forEach(t => addRow([t.label, stats.ordersByType?.[t.id] || 0]));
+    addRow([]);
+    addRow(['MÓN BÁN CHẠY (TOP 8)']);
+    addRow(['Hạng', 'Tên món', 'Số lượng bán', 'Doanh thu']);
+    stats.topItems.forEach((item, i) => {
+      moneyCells.push({ r: addRow([i + 1, item.name, item.count, item.revenue]), c: 3 });
+    });
+
+    const wsOverview = XLSX.utils.aoa_to_sheet(overview);
+    wsOverview['!cols'] = [{ wch: 26 }, { wch: 26 }, { wch: 16 }, { wch: 16 }];
+    moneyCells.forEach(({ r, c }) => {
+      const ref = XLSX.utils.encode_cell({ r, c });
+      if (wsOverview[ref]) wsOverview[ref].z = MONEY_FMT;
+    });
+
+    // ───────────── Sheet 2: Chi Tiết Đơn Hàng ─────────────
+    const HEADER = ['Mã Đơn', 'Ngày', 'Giờ Vào', 'Giờ Thanh Toán', 'Khu/Bàn', 'Loại Đơn', 'Thu Ngân', 'Khách', 'Món Đã Gọi', 'Tổng Tiền', 'Thanh Toán', 'Trạng Thái'];
+    const detailRows = filteredOrders.map(o => {
+      const created = new Date(o.createdAt || o.created_at);
+      const paidTime = o.paidAt || o.paid_at;
+      return {
+        'Mã Đơn': o.id,
+        'Ngày': vnDateStr(created),
+        'Giờ Vào': created.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        'Giờ Thanh Toán': paidTime ? new Date(paidTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
+        'Khu/Bàn': o.tableName,
+        'Loại Đơn': ORDER_TYPES.find(t => t.id === (o.orderType || o.order_type))?.label || 'Tại bàn',
+        'Thu Ngân': o.staffName || STAFF_LIST.find(s => s.id === o.staffId)?.name || '—',
+        'Khách': o.guestCount || 0,
+        'Món Đã Gọi': (o.items || []).map(i => `${i.quantity}x ${i.name}`).join(', '),
+        'Tổng Tiền': o.total,
+        'Thanh Toán': o.paymentMethod === 'cash' ? 'Tiền Mặt' : o.paymentMethod === 'transfer' ? 'Chuyển Khoản' : '',
+        'Trạng Thái': o.status === 'paid' ? 'Đã thu tiền' : o.status === 'done' ? 'Đã ra món' : o.status,
+      };
+    });
+
+    const wsDetail = detailRows.length ? XLSX.utils.json_to_sheet(detailRows) : XLSX.utils.aoa_to_sheet([HEADER]);
+    const moneyColIdx = HEADER.indexOf('Tổng Tiền');
+    const range = XLSX.utils.decode_range(wsDetail['!ref']);
+
+    for (let r = 1; r <= range.e.r; r++) {
+      const ref = XLSX.utils.encode_cell({ r, c: moneyColIdx });
+      if (wsDetail[ref]) wsDetail[ref].z = MONEY_FMT;
+    }
+
+    // Totals row + autofilter on the header
+    wsDetail['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: range.e.r, c: range.e.c } }) };
+    const totalRow = range.e.r + 1;
+    wsDetail[XLSX.utils.encode_cell({ r: totalRow, c: 0 })] = { t: 's', v: `TỔNG CỘNG (${filteredOrders.length} đơn)` };
+    wsDetail[XLSX.utils.encode_cell({ r: totalRow, c: moneyColIdx })] = { t: 'n', v: filteredOrders.reduce((s, o) => s + o.total, 0), z: MONEY_FMT };
+    wsDetail['!ref'] = XLSX.utils.encode_range({ s: range.s, e: { r: totalRow, c: range.e.c } });
+
+    wsDetail['!cols'] = [
+      { wch: 16 }, // Mã Đơn
+      { wch: 12 }, // Ngày
+      { wch: 9 },  // Giờ Vào
+      { wch: 13 }, // Giờ Thanh Toán
+      { wch: 10 }, // Khu/Bàn
+      { wch: 11 }, // Loại Đơn
+      { wch: 13 }, // Thu Ngân
       { wch: 8 },  // Khách
-      { wch: 15 }, // Tổng Tiền
-      { wch: 15 }, // Thanh Toán
-      { wch: 60 }, // Món Đã Gọi
-      { wch: 22 }, // Giờ Tạo
-      { wch: 22 }, // Giờ HT
-      { wch: 15 }, // Trạng Thái
+      { wch: 55 }, // Món Đã Gọi
+      { wch: 14 }, // Tổng Tiền
+      { wch: 13 }, // Thanh Toán
+      { wch: 13 }, // Trạng Thái
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Doanh Thu");
+    XLSX.utils.book_append_sheet(wb, wsOverview, 'Tổng Quan');
+    XLSX.utils.book_append_sheet(wb, wsDetail, 'Chi Tiết Đơn Hàng');
 
     let fName = 'BaoCao_ToanBo.xlsx';
     if (filterType === 'day') fName = `BaoCao_Ngay_${filterDate}.xlsx`;
@@ -298,9 +364,7 @@ export default function AdminView() {
             let dateKey = 'unknown';
             if (dateStr) {
               // Convert to Vietnam local date (UTC+7) to avoid grouping midnight orders on wrong day
-              const d = new Date(dateStr);
-              const vnDate = new Date(d.getTime() + 7 * 60 * 60 * 1000);
-              dateKey = vnDate.toISOString().split('T')[0]; // YYYY-MM-DD in VN time
+              dateKey = vnDateStr(new Date(dateStr));
             }
             if (!grouped[dateKey]) grouped[dateKey] = [];
             grouped[dateKey].push(order);

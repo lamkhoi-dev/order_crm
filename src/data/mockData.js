@@ -141,6 +141,21 @@ export function formatCurrency(amount) {
   }).format(amount);
 }
 
+// Vietnam has no DST and is always UTC+7 — shifting the epoch and
+// reading it back with toISOString() gives VN wall-clock date/time
+// regardless of the machine's own system timezone.
+export function toVNDate(date = new Date()) {
+  return new Date(date.getTime() + 7 * 60 * 60 * 1000);
+}
+
+export function vnDateStr(date = new Date()) {
+  return toVNDate(date).toISOString().split('T')[0]; // YYYY-MM-DD
+}
+
+export function vnMonthStr(date = new Date()) {
+  return toVNDate(date).toISOString().slice(0, 7); // YYYY-MM
+}
+
 export function generateOrderId() {
   const now = new Date();
   const MM = String(now.getMonth() + 1).padStart(2, '0');
