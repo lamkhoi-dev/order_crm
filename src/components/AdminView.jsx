@@ -174,21 +174,21 @@ export default function AdminView() {
             onChange={e => setPassInput(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter') {
-                if (passInput === '123456') {
+                if (passInput === 'Dinh057') {
                   setIsAuthenticated(true);
                 } else {
                   addToast('Sai mật khẩu!', 'error');
                 }
               }
             }}
-            placeholder="Nhập 123456..." 
+            placeholder="Nhập mật khẩu..." 
             style={{ padding: '10px 14px', fontSize: '16px', borderRadius: 'var(--radius-sm)', border: '1.5px solid var(--color-border)', width: '100%', outline: 'none' }}
             autoFocus
           />
           <button 
             className="btn btn--primary" 
             onClick={() => {
-              if (passInput === '123456') {
+              if (passInput === 'Dinh057') {
                 setIsAuthenticated(true);
               } else {
                 addToast('Sai mật khẩu!', 'error');

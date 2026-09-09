@@ -685,7 +685,7 @@ export default function OrderView() {
                 onChange={e => setAdminPassInput(e.target.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
-                    if (adminPassInput === 'admin123') {
+                    if (adminPassInput === 'Dinh057') {
                       removeItemFromOrder(pendingDeleteItem.orderId, pendingDeleteItem.itemIndex);
                       addToast(`Đã xoá: ${pendingDeleteItem.itemName}`, 'info');
                       setPendingDeleteItem(null);
@@ -702,7 +702,7 @@ export default function OrderView() {
             <div className="admin-pass-modal__actions">
               <button className="btn btn--secondary" onClick={() => { setPendingDeleteItem(null); setAdminPassInput(''); }}>Huỷ</button>
               <button className="btn btn--danger" onClick={() => {
-                if (adminPassInput === 'admin123') {
+                if (adminPassInput === 'Dinh057') {
                   removeItemFromOrder(pendingDeleteItem.orderId, pendingDeleteItem.itemIndex);
                   addToast(`Đã xoá: ${pendingDeleteItem.itemName}`, 'info');
                   setPendingDeleteItem(null);
@@ -741,7 +741,7 @@ export default function OrderView() {
                 onChange={e => setCancelPassInput(e.target.value)}
                 onKeyDown={async e => {
                   if (e.key === 'Enter') {
-                    if (cancelPassInput === '123456') {
+                    if (cancelPassInput === 'Dinh057') {
                       setPendingCancelOrder(false);
                       setShowPaymentMode(false);
                       await cancelOrder(tableOrder.id);
@@ -757,7 +757,7 @@ export default function OrderView() {
             <div className="admin-pass-modal__actions">
               <button className="btn btn--secondary" onClick={() => { setPendingCancelOrder(false); setCancelPassInput(''); }}>Huỷ bỏ</button>
               <button className="btn btn--danger" onClick={async () => {
-                if (cancelPassInput === '123456') {
+                if (cancelPassInput === 'Dinh057') {
                   setPendingCancelOrder(false);
                   setShowPaymentMode(false);
                   await cancelOrder(tableOrder.id);
